@@ -1,0 +1,602 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="40552c99-a92f-47af-b266-b54e57c97710" name="Changes" comment="系统管理/ 考试记录和排行榜模块&#10;  - 考试记录的四个接口&#10;  - 排行榜功能实现">
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/config/WebClientConfiguration.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/config/WebClientConfiguration.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/controller/PaperController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/controller/PaperController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/controller/QuestionBatchController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/controller/QuestionBatchController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/controller/QuestionController.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/controller/QuestionController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/controller/StringDemo.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/mapper/QuestionMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/mapper/QuestionMapper.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/service/QuestionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/service/QuestionService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/service/impl/CategoryServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/service/impl/CategoryServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/service/impl/FileUploadServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/atguigu/exam/service/impl/FileUploadServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/mapper/QuestionMapper.xml" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/mapper/QuestionMapper.xml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CompilerWorkspaceConfiguration">
+    <option name="MAKE_PROJECT_ON_SAVE" value="true" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Interface" />
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="customMavenHome" value="D:\java0421\apache-maven-3.8.8" />
+        <option name="mavenHomeTypeForPersistence" value="CUSTOM" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="32IwlKdrNDlIQjkcRpD4qquQHwv" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.ListDemo.executor&quot;: &quot;Run&quot;,
+    &quot;Application.StringDemo.executor&quot;: &quot;Run&quot;,
+    &quot;Application.TestList.executor&quot;: &quot;Run&quot;,
+    &quot;Maven.day23_exam-system-server [clean].executor&quot;: &quot;Run&quot;,
+    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
+    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
+    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
+    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;Spring Boot.AdminWebApplication.executor&quot;: &quot;Run&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/javaprojects/day23_exam-system-server/src/main/resources/docs&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;onboarding.tips.debug.path&quot;: &quot;D:/javaprojects/day23_exam-system-server/src/main/java/com/atguigu/java/Main.java&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;vcs.Git&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="ReactorSettings">
+    <option name="notificationShown" value="true" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\javaprojects\day23_exam-system-server\src\main\resources\docs" />
+      <recent name="D:\javaprojects\day23_exam-system-server\src\main\java\com\atguigu\exam" />
+      <recent name="D:\javaprojects\day23_exam-system-server\src\main\resources" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Spring Boot.AdminWebApplication">
+    <configuration name="StringDemo" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.atguigu.exam.controller.StringDemo" />
+      <module name="day23_exam-system-server" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.atguigu.exam.controller.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="TestList" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.atguigu.exam.controller.TestList" />
+      <module name="day23_exam-system-server" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.atguigu.exam.controller.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="AdminWebApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" temporary="true" nameIsGenerated="true">
+      <module name="day23_exam-system-server" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="com.atguigu.exam.AdminWebApplication" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.atguigu.exam.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Spring Boot.AdminWebApplication" />
+        <item itemvalue="Application.StringDemo" />
+        <item itemvalue="Application.TestList" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9f38398b9061-18abd8497189-intellij.indexing.shared.core-IU-241.14494.240" />
+        <option value="bundled-js-predefined-1d06a55b98c1-74d2a5396914-JavaScript-IU-241.14494.240" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="40552c99-a92f-47af-b266-b54e57c97710" name="Changes" comment="" />
+      <created>1757121543965</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1757121543965</updated>
+      <workItem from="1757121545016" duration="20675000" />
+      <workItem from="1757243241623" duration="750000" />
+      <workItem from="1757250337751" duration="282000" />
+      <workItem from="1757291760433" duration="11908000" />
+      <workItem from="1757317352379" duration="6905000" />
+      <workItem from="1757377893008" duration="9262000" />
+      <workItem from="1757398767624" duration="10364000" />
+      <workItem from="1757420079164" duration="32000" />
+      <workItem from="1757429051667" duration="1447000" />
+      <workItem from="1757464938428" duration="24352000" />
+      <workItem from="1757572890857" duration="218000" />
+      <workItem from="1757574195199" duration="1408000" />
+      <workItem from="1757636907958" duration="20399000" />
+      <workItem from="1757680528456" duration="92000" />
+      <workItem from="1757723353629" duration="15716000" />
+      <workItem from="1757903119177" duration="2528000" />
+      <workItem from="1757918849161" duration="3148000" />
+      <workItem from="1757922123475" duration="21966000" />
+    </task>
+    <task id="LOCAL-00001" summary="项目初始化搭建&#10;  - mybatisx插件生成相关类&#10;  - 导入controller和工具类以及vo&#10;  - 经过运行测试可以访问接口测试文档">
+      <option name="closed" value="true" />
+      <created>1757124494563</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1757124494563</updated>
+    </task>
+    <task id="LOCAL-00002" summary="系统管理/轮播图管理&#10;  - 查询所有轮播图信息&#10;  - 逻辑删除完善和添加&#10;  - 日期类型格式化设置&#10;  - 逻辑删除字段忽略配置">
+      <option name="closed" value="true" />
+      <created>1757128718392</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1757128718392</updated>
+    </task>
+    <task id="LOCAL-00003" summary="系统管理/轮播图管理&#10;  - 查询激活状态轮播图信息&#10;  - 前台需要的接口">
+      <option name="closed" value="true" />
+      <created>1757130158570</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1757130158570</updated>
+    </task>
+    <task id="LOCAL-00004" summary="系统管理/轮播图管理&#10;  - 修改轮播图的状态&#10;  - 后台触发的接口&#10;  - 影响前台展示效果&#10;  - 需要判断修改是否成功">
+      <option name="closed" value="true" />
+      <created>1757130891932</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1757130891932</updated>
+    </task>
+    <task id="LOCAL-00005" summary="系统管理/轮播图管理&#10;  - 删除轮播图">
+      <option name="closed" value="true" />
+      <created>1757137872116</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1757137872116</updated>
+    </task>
+    <task id="LOCAL-00006" summary="系统管理/轮播图管理&#10;  - 查询轮播图详情&#10;  - 进行了非空和失败判断">
+      <option name="closed" value="true" />
+      <created>1757138267994</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1757138267994</updated>
+    </task>
+    <task id="LOCAL-00007" summary="系统管理/轮播图管理&#10;  - 通用文件上传核心业务方法&#10;  - 集成minio环境&#10;  - 集成全局异常处理">
+      <option name="closed" value="true" />
+      <created>1757143739347</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1757143739347</updated>
+    </task>
+    <task id="LOCAL-00008" summary="系统管理/轮播图管理&#10;  - 轮播图图片上传接口&#10;  - 调用核心文件上传业务&#10;  - 进行了上传大小的配置">
+      <option name="closed" value="true" />
+      <created>1757144954523</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1757144954523</updated>
+    </task>
+    <task id="LOCAL-00009" summary="系统管理/轮播图管理&#10;  - 轮播图信息保存功能&#10;  - mybatis-plus自动填充">
+      <option name="closed" value="true" />
+      <created>1757146819333</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1757146819333</updated>
+    </task>
+    <task id="LOCAL-00010" summary="系统管理/轮播图管理&#10;  - 轮播图信息更新功能&#10;  - 2025/09/06 16:27">
+      <option name="closed" value="true" />
+      <created>1757147258191</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1757147258191</updated>
+    </task>
+    <task id="LOCAL-00011" summary="系统管理/分类信息管理&#10;  - 分类列表接口查询&#10;  - 多表查询三种方案说明&#10;  - @Select注解说明&#10;  - 进行list-》stream-》Map&#10;  - 2025/09/08 10:12">
+      <option name="closed" value="true" />
+      <created>1757297545307</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1757297545307</updated>
+    </task>
+    <task id="LOCAL-00012" summary="系统管理/分类信息管理&#10;  - 分类树状列表查询&#10;  - stream分组和sum求和&#10;  - 跨域问题解决">
+      <option name="closed" value="true" />
+      <created>1757299832471</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1757299832471</updated>
+    </task>
+    <task id="LOCAL-00013" summary="系统管理/分类信息管理&#10;  - 保存分类信息&#10;  - 进行同父分类下，名称校验&#10;  - getBaseMapper()">
+      <option name="closed" value="true" />
+      <created>1757311333565</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1757311333565</updated>
+    </task>
+    <task id="LOCAL-00014" summary="系统管理/分类信息管理&#10;  - 更新分类信息&#10;  - 同一个父分类下，不同id,不运行重复名&#10;  - getBaseMapper()">
+      <option name="closed" value="true" />
+      <created>1757311925010</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1757311925010</updated>
+    </task>
+    <task id="LOCAL-00015" summary="系统管理/分类信息管理&#10;  - 修改树状图查询bug&#10;  - 没有按照sort排序&#10;  - 调用集合的排序方法sort">
+      <option name="closed" value="true" />
+      <created>1757312243450</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1757312243450</updated>
+    </task>
+    <task id="LOCAL-00016" summary="系统管理/分类信息管理&#10;  - 删除分类信息接口&#10;  - 防御性编程介绍&#10;  - 进行题目和一级分类判断">
+      <option name="closed" value="true" />
+      <created>1757313179472</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1757313179472</updated>
+    </task>
+    <task id="LOCAL-00017" summary="系统管理/ 题目信息管理&#10;  - 分页题目信息查询&#10;  - 分步查询实现&#10;  - Java逻辑判断实现&#10;  - 1+n的优化">
+      <option name="closed" value="true" />
+      <created>1757323585266</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1757323585266</updated>
+    </task>
+    <task id="LOCAL-00018" summary="系统管理/ 题目信息管理&#10;  - 题目详情查询接口实现&#10;  - on和where条件问题&#10;  - notNullColumn=&quot;qcs_id&quot;&#10;  - 多表查询嵌套结果实现">
+      <option name="closed" value="true" />
+      <created>1757384523897</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1757384523897</updated>
+    </task>
+    <task id="LOCAL-00019" summary="系统管理/ 题目信息管理&#10;  - 题目保存详解接口实现&#10;  - 主键回显">
+      <option name="closed" value="true" />
+      <created>1757390475565</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1757390475565</updated>
+    </task>
+    <task id="LOCAL-00020" summary="系统管理/ 题目信息管理 /bug修复&#10;  - 修改了查询列表没有时间排序问题&#10;  - 修改了选项添加数据库没有转成AB问题">
+      <option name="closed" value="true" />
+      <created>1757397112119</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1757397112119</updated>
+    </task>
+    <task id="LOCAL-00021" summary="系统管理/ 题目信息管理&#10;  - 题目信息修改接口实现&#10;  - 多行修改思路（删除+新增）">
+      <option name="closed" value="true" />
+      <created>1757401758964</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1757401758964</updated>
+    </task>
+    <task id="LOCAL-00022" summary="系统管理/ 题目信息管理 /bug修改&#10;  - 题目信息修改接口选项判断问题">
+      <option name="closed" value="true" />
+      <created>1757402706953</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1757402706953</updated>
+    </task>
+    <task id="LOCAL-00023" summary="系统管理/ 题目信息管理 &#10;  - 题目信息删除&#10;  - 判断试卷题目表&#10;  - 删除关联数据（选项和答案）&#10;  - 删除都是防御性编程做好判断！">
+      <option name="closed" value="true" />
+      <created>1757403572182</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1757403572182</updated>
+    </task>
+    <task id="LOCAL-00024" summary="系统管理/ 题目信息管理 &#10;  - 热门题目信息查询接口&#10;  - 注意题目排序问题&#10;  - 热门题目不足，需要补充最新题目">
+      <option name="closed" value="true" />
+      <created>1757409633480</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1757409633480</updated>
+    </task>
+    <task id="LOCAL-00025" summary="系统管理/ 题目信息管理 / bug修改&#10;  - 热门题目信息查询接口&#10;  - 没有根据分数进行排行！&#10;  - 获取id和分数，分数倒序">
+      <option name="closed" value="true" />
+      <created>1757410307884</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1757410307884</updated>
+    </task>
+    <task id="LOCAL-00026" summary="系统管理/ 题目信息管理 / bug修改&#10;  - 修改题目信息接口&#10;  - 添加选项报错问题">
+      <option name="closed" value="true" />
+      <created>1757465465866</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1757465465866</updated>
+    </task>
+    <task id="LOCAL-00027" summary="系统管理/ 题目信息管理 / bug修改&#10;  - 查询热题榜单问题&#10;  - 判断题目，非空添加&#10;  - 防止redis存在，但是question表中已经删除">
+      <option name="closed" value="true" />
+      <created>1757466519304</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1757466519304</updated>
+    </task>
+    <task id="LOCAL-00028" summary="系统管理/ 题目信息管理 / bug修改&#10;  - 刷题中选择题选项顺序随机问题&#10;  - 保存和修改选项添加排序值">
+      <option name="closed" value="true" />
+      <created>1757470404001</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1757470404001</updated>
+    </task>
+    <task id="LOCAL-00029" summary="系统管理/ 题目批量信息管理&#10;  - 下载模板接口&#10;  - 修改了前端代理">
+      <option name="closed" value="true" />
+      <created>1757473070325</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1757473070325</updated>
+    </task>
+    <task id="LOCAL-00030" summary="系统管理/ 题目批量信息管理&#10;  - 导入文件和数据预览">
+      <option name="closed" value="true" />
+      <created>1757474678644</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1757474678644</updated>
+    </task>
+    <task id="LOCAL-00031" summary="系统管理/ 题目批量信息管理&#10;  - 预览数据批量导入&#10;  - 注意：try + catch 部分失败排除&#10;  - 注意：判断题 答案转成大写">
+      <option name="closed" value="true" />
+      <created>1757485799657</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1757485799657</updated>
+    </task>
+    <task id="LOCAL-00032" summary="系统管理/ 题目批量信息管理&#10;  - execl文件数据批量导入&#10;  - 复用预览数据批量导入业务">
+      <option name="closed" value="true" />
+      <created>1757486363457</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1757486363457</updated>
+    </task>
+    <task id="LOCAL-00033" summary="系统管理/ 题目批量信息管理 / bug修复&#10;  - 修改批量导入，简答题无答案问题">
+      <option name="closed" value="true" />
+      <created>1757486534327</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1757486534327</updated>
+    </task>
+    <task id="LOCAL-00034" summary="系统管理/ 题目批量信息管理 &#10;  - kimi和webclient集成&#10;  - 提示词方法添加&#10;  - 封装kimiCall方法&#10;  - ai题目批量生成">
+      <option name="closed" value="true" />
+      <created>1757501137206</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1757501137206</updated>
+    </task>
+    <task id="LOCAL-00035" summary="系统管理/ 题目批量信息管理 &#10;  - 修改了描述文档">
+      <option name="closed" value="true" />
+      <created>1757501994044</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1757501994044</updated>
+    </task>
+    <task id="LOCAL-00036" summary="系统管理/ 试卷信息管理模块 &#10;  - 试卷信息模块接口和实体类分析&#10;  - 试卷列表动态条件查询实现">
+      <option name="closed" value="true" />
+      <created>1757639664387</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1757639664387</updated>
+    </task>
+    <task id="LOCAL-00037" summary="系统管理/ 试卷信息管理模块 &#10;  - 试卷详情接口具体实现">
+      <option name="closed" value="true" />
+      <created>1757645633064</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1757645633064</updated>
+    </task>
+    <task id="LOCAL-00038" summary="系统管理/ 试卷信息管理模块 &#10;  - 手动组卷功能&#10;  - 前端代码调整">
+      <option name="closed" value="true" />
+      <created>1757656344500</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1757656344500</updated>
+    </task>
+    <task id="LOCAL-00039" summary="系统管理/ 试卷信息管理模块 &#10;  - 智能组卷组卷功能&#10;  - 前端代码调整 519">
+      <option name="closed" value="true" />
+      <created>1757662588387</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1757662588387</updated>
+    </task>
+    <task id="LOCAL-00040" summary="系统管理/ 试卷信息管理模块 &#10;  - 试卷信息接口更新实现&#10;  - 前端代码调整 488 error.message">
+      <option name="closed" value="true" />
+      <created>1757664893137</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1757664893137</updated>
+    </task>
+    <task id="LOCAL-00041" summary="系统管理/ 试卷信息管理模块 &#10;  - 试卷状态修改接口实现">
+      <option name="closed" value="true" />
+      <created>1757666220997</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1757666220997</updated>
+    </task>
+    <task id="LOCAL-00042" summary="系统管理/ 试卷信息管理模块 &#10;  - 试卷信息删除接口实现">
+      <option name="closed" value="true" />
+      <created>1757667578179</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1757667578179</updated>
+    </task>
+    <task id="LOCAL-00043" summary="系统管理/ 考试管理模块&#10;  - 三套接口分析（开始，详情，提交）&#10;  - 开始考试接口实现&#10;  - 考试详情接口实现">
+      <option name="closed" value="true" />
+      <created>1757735159471</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1757735159471</updated>
+    </task>
+    <task id="LOCAL-00044" summary="系统管理/ 考试管理模块&#10;  - ai判简答题&#10;  - ai生成提示语&#10;  - 实现提交试卷和判卷接口">
+      <option name="closed" value="true" />
+      <created>1757748064744</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1757748064744</updated>
+    </task>
+    <task id="LOCAL-00045" summary="系统管理/ 考试记录和排行榜模块&#10;  - 考试记录的四个接口&#10;  - 排行榜功能实现">
+      <option name="closed" value="true" />
+      <created>1757754911997</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1757754911997</updated>
+    </task>
+    <option name="localTasksCounter" value="46" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="系统管理/ 题目信息管理&#10;  - 题目信息修改接口实现&#10;  - 多行修改思路（删除+新增）" />
+    <MESSAGE value="系统管理/ 题目信息管理 /bug修改&#10;  - 题目信息修改接口选项判断问题" />
+    <MESSAGE value="系统管理/ 题目信息管理 &#10;  - 题目信息删除&#10;  - 判断试卷题目表&#10;  - 删除关联数据（选项和答案）&#10;  - 删除都是防御性编程做好判断！" />
+    <MESSAGE value="系统管理/ 题目信息管理 &#10;  - 热门题目信息查询接口&#10;  - 注意题目排序问题&#10;  - 热门题目不足，需要补充最新题目" />
+    <MESSAGE value="系统管理/ 题目信息管理 / bug修改&#10;  - 热门题目信息查询接口&#10;  - 没有根据分数进行排行！&#10;  - 获取id和分数，分数倒序" />
+    <MESSAGE value="系统管理/ 题目信息管理 / bug修改&#10;  - 修改题目信息接口&#10;  - 添加选项报错问题" />
+    <MESSAGE value="系统管理/ 题目信息管理 / bug修改&#10;  - 查询热题榜单问题&#10;  - 判断题目，非空添加&#10;  - 防止redis存在，但是question表中已经删除" />
+    <MESSAGE value="系统管理/ 题目信息管理 / bug修改&#10;  - 刷题中选择题选项顺序随机问题&#10;  - 保存和修改选项添加排序值" />
+    <MESSAGE value="系统管理/ 题目批量信息管理&#10;  - 下载模板接口&#10;  - 修改了前端代理" />
+    <MESSAGE value="系统管理/ 题目批量信息管理&#10;  - 导入文件和数据预览" />
+    <MESSAGE value="系统管理/ 题目批量信息管理&#10;  - 预览数据批量导入&#10;  - 注意：try + catch 部分失败排除&#10;  - 注意：判断题 答案转成大写" />
+    <MESSAGE value="系统管理/ 题目批量信息管理&#10;  - execl文件数据批量导入&#10;  - 复用预览数据批量导入业务" />
+    <MESSAGE value="系统管理/ 题目批量信息管理 / bug修复&#10;  - 修改批量导入，简答题无答案问题" />
+    <MESSAGE value="系统管理/ 题目批量信息管理 &#10;  - kimi和webclient集成&#10;  - 提示词方法添加&#10;  - 封装kimiCall方法&#10;  - ai题目批量生成" />
+    <MESSAGE value="系统管理/ 题目批量信息管理 &#10;  - 修改了描述文档" />
+    <MESSAGE value="系统管理/ 试卷信息管理模块 &#10;  - 试卷信息模块接口和实体类分析&#10;  - 试卷列表动态条件查询实现" />
+    <MESSAGE value="系统管理/ 试卷信息管理模块 &#10;  - 试卷详情接口具体实现" />
+    <MESSAGE value="系统管理/ 试卷信息管理模块 &#10;  - 手动组卷功能&#10;  - 前端代码调整" />
+    <MESSAGE value="系统管理/ 试卷信息管理模块 &#10;  - 智能组卷组卷功能&#10;  - 前端代码调整 519" />
+    <MESSAGE value="系统管理/ 试卷信息管理模块 &#10;  - 试卷信息接口更新实现&#10;  - 前端代码调整 488 error.message" />
+    <MESSAGE value="系统管理/ 试卷信息管理模块 &#10;  - 试卷状态修改接口实现" />
+    <MESSAGE value="系统管理/ 试卷信息管理模块 &#10;  - 试卷信息删除接口实现" />
+    <MESSAGE value="系统管理/ 考试管理模块&#10;  - 三套接口分析（开始，详情，提交）&#10;  - 开始考试接口实现&#10;  - 考试详情接口实现" />
+    <MESSAGE value="系统管理/ 考试管理模块&#10;  - ai判简答题&#10;  - ai生成提示语&#10;  - 实现提交试卷和判卷接口" />
+    <MESSAGE value="系统管理/ 考试记录和排行榜模块&#10;  - 考试记录的四个接口&#10;  - 排行榜功能实现" />
+    <option name="LAST_COMMIT_MESSAGE" value="系统管理/ 考试记录和排行榜模块&#10;  - 考试记录的四个接口&#10;  - 排行榜功能实现" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/atguigu/java/Main.java</url>
+          <line>13</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/atguigu/exam/service/impl/ExamServiceImpl.java</url>
+          <line>133</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/atguigu/exam/service/impl/ExamServiceImpl.java</url>
+          <line>168</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

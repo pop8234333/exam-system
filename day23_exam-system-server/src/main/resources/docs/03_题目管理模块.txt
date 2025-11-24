@@ -1,0 +1,202 @@
+
+1. 查询所有题目信息分页接口
+   接口分析：
+     参数：
+        key = value  6个参数 分页两个 + 4个其他（类别id,题目类型，题目难度，title模糊关键字）
+     响应：
+        data -> page对象
+   业务分析：
+     多个查询：题目为主，进行题目选项和答案查找
+         方案1：连表查询（嵌套结果）表1 left 表2 left 表3 -》 resultMap -> association -> 答案 || collection -> 选项  (最简单！性能最好)
+         方案2：分步查询（嵌套查询）题目+答案 -》 分页 -》 触发 -》 根据题目id查询选项  （中等麻烦，性能不好，1+n+n）
+         方案3：Java代码进行逻辑处理 (比较麻烦，性能比分步好！ 1+1+1) 【使用】
+     分页查询：使用分页插件进行查询
+         连表查询 -》 对多+分页插件 =》数据缺失！  |   分步查询 -》 对多 + 分页插件
+         题目 -》 对多  -》 选项
+              -》 对一 -》 答案
+     动态条件：四个动态条件，mybatis -> 动态标签 || mybatis-plus方案 condition like(判断,question::getTitle,keyword)
+   实现过程：
+     分步实现过程：
+        1. 准备分页相关的内容和插件配置
+           Mybatis-plus配置类 -》 @Bean MybatisPlusInterceptor
+        2. 改造controller接收的参数
+           原： 直接6个接收 改：2个散着接 4个vo接受
+           定义一个Vo (类别,难度，分类id,关键字)
+        3. 实现controller代码
+           Page<Question> page = new Page(page,size);
+           questionService.customPage(page,vo);
+        4. 实现service代码
+           questionMapper.customQueryPage(page,vo);
+        5. 定义被调用Mapper[QuestionChoiceMapper]
+           根据题目id查询所有选项
+           @Select(select * from question_choices where is_deleted = 0 and question_id = #{id} order by sort asc ; )
+           List<QuestChoice> queryxxx(Long questionId);
+        6. 定义调用MapperQuestionMapper
+           IPage<Question> xxx(IPage page, @Param("vo")QueryVo vo)
+        7. 定义QuestionMapper.xml 文件
+           sql实现和调用。。。
+           <resultMap id="questionMap" type="com.atguigu.exam.entity.Question">
+                   <id column="id" property="id" />
+                   <association property="answer" javaType="com.atguigu.exam.entity.QuestionAnswer">
+                       <id column="qas_id" property="id" />
+                       <result column="qas_create_time" property="createTime" />
+                       <result column="qas_update_time" property="updateTime" />
+                       <result column="id" property="questionId" />
+                   </association>
+                   <collection property="choices" ofType="com.atguigu.exam.entity.QuestionChoice"
+                          column="id" select="com.atguigu.exam.mapper.QuestionChoiceMapper.selectListByQuestionId" />
+               </resultMap>
+
+               <select id="customPage" resultMap="questionMap">
+                   select
+                       qs.*,
+                       qas.id qas_id,
+                       qas.answer,
+                       qas.keywords,
+                       qas.create_time qas_create_time,
+                       qas.update_time qas_update_time
+                   from questions qs left join question_answers qas on qs.id = qas.question_id
+                   where qs.is_deleted = 0 and qas.is_deleted = 0
+                   <if test="queryVo.type != null and queryVo.type != ''">
+                       and qs.type = #{queryVo.type}
+                   </if>
+                   <if test="queryVo.difficulty != null and queryVo.difficulty != ''">
+                       and qs.difficulty = #{queryVo.difficulty}
+                   </if>
+                   <if test="queryVo.categoryId != null">
+                       and qs.category_id = #{queryVo.categoryId}
+                   </if>
+                   <if test="queryVo.keyword != null and queryVo.keyword != ''">
+                       and title like concat('%',#{queryVo.keyword},'%')
+                   </if>
+                   order by create_time desc
+               </select>
+           8. 修改application.yml配置
+              #用于打印框架生成的sql语句，便于调试
+              mybatis-plus:
+                configuration:
+                  log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+                  auto-mapping-behavior: full #开启嵌套自动映射
+                  map-underscore-to-camel-case: true
+     Java代码逻辑优化过程：
+        1. 查询所有题目（分页+多条件），根据题目id查询答案 List<答案实体类> ，根据题目id查询所有选项  List<题目选项集合>
+        2. 将答案的集合 转成Map <QuestionId,答案实体类>
+        3. 将题目选项集合，转成Map <QuestionId,List<题目选项>>
+        4. 循环题目列表 -》 逐一获取答案和选项进行赋值
+   注意事项：
+       注意：自定义的sql必须添加逻辑删除字段！
+       注意：一定要添加mybatis-plus相关的配置
+
+2. 根据题目id查询题目详情信息接口（修改的回显，前端查看题目）
+   接口分析：
+     参数： /{id}
+     响应：
+           {question 【选项集合】 {答案对象}}
+   业务分析：
+     1.核心部分，根据id完成题目信息查询  方案1：嵌套结果【我用这种】 方案2：分步查询【肯定不能】 方案3：Java代码处理【教案】
+     2.进行热题记录，记录热题信息 【异步 线程】
+         存储热题信息 -》 mysql | redis -> zset  集合key 分(查看次数 1 + 1 + 1 ) 值（题id）  分 值 ....  分正序 倒序
+   实现过程：
+     1. 进行redis的整合
+        导入场景启动器 ， application.yml 配置host port  ， 定制序列化器 ， 导入redis的常量类和工具类
+     2. 定义详情业务，先查询题目和详情信息[方案1]
+     3. 开启子线程触发，题目计数增长的方法，进行zset分增长即可
+     4. 返回题目详情
+   注意事项：
+     注意1： 查询题目选项的条件需要添加 on后面！ 总结：外连接，子表（可能没有数据）的条件建议放在on后面！
+     注意2： 统计访问次数，要开启一个线程进行！！
+     注意3： 有些题型没有选项，防止出现选项空集合  notNullColumn="qcs_id">
+
+3. 题目信息添加功能接口
+   接口分析：
+     参数：
+        传入question对象（没有id）
+        简答题或者判断题： 答案对象并且赋予正确的答案 + questionId -> 保存
+        选择题： 选项集合 -》 正确答案 -》 选项集合保存 + question || 答案对象 + questionId 进行保存
+     响应：
+   业务分析：
+     先保存题目，并且回显题目id
+     拼接答案 = 题目id 进行答案保存
+     如果是选择题 = 每个选项配置题目id 进行选项的保存
+     一个业务涉及了多个DML动作，保证一致性！
+     保存题目业务需要添加事务
+   实现过程：
+     1.一定插入题目信息 （回显题目id）
+     2.获取答案对象，并先配置题目id
+     3.判断是不是选择题
+       是 -》 循环 -》 选项 + 题目id -> 保存 -》 判断是不是正确 进行 A,B,C
+       直接给答案对象配置正确答案
+     4.保存答案对象
+     5.保证方法的一致性！ 需要添加事务
+   注意事项：
+
+4. 题目信息修改功能接口
+   接口分析：
+     参数：
+        传入question对象（有id）
+        简答题或者判断题： 答案对象并且赋予正确的答案 （有id）
+        选择题： 选项集合 -》 正确答案 -》 选项集合保存 -> 删除原来的选项 -》 新增选项 -》 组合正确答案
+     响应：
+   业务分析：
+     修改题目信息表 【一条】
+        简单的单表修改（校验）
+     修改答案信息表 【一条】
+        简单的单表修改（判断题和简单题直接有答案，选择题-》根据选项拼接新的答案）
+     修改选项信息表 【多条】
+        4个选项-》改为3个选项
+        4个选项-》依然4个选项 -》 修改了其中的两个content 修改正确答案 AB -> CD
+     开发多条修改逻辑：删除 + 新增
+   实现过程：
+      1. 题目的校验 （不同id不运行title重复）
+      2. 修改题目
+      3. 获取答案对象
+      4. 判断是选择题
+         删除题目对应的所有选项（原）
+         循环新增选项（选项上id == null）
+         拼接正确的档案 a,b
+         答案对象赋值选择题答案
+      5. 进行答案的修改
+      6. 保证一致性，添加事务
+   注意事项：
+
+5. 题目信息删除功能接口
+   接口分析：
+     参数：path /{id}
+     响应：
+   业务分析：
+      删除 防御性编程
+      重要的关联数据，要校验，存在，不允许删除！ 【试卷题目表】
+      自己子数据，查询，存在一并删除！ 【选项 ， 答案表 】
+      还有一些，虽然有关联，但是无所谓，我们不管他！ 【分类，答题记录】
+   实现过程：
+      1. 判断试卷题目表，存在删除失败！
+      2. 删除主表 题目表
+      3. 删除子表 答案和选项表
+   注意事项：
+
+6. 首页获取热门题目列表功能接口
+   接口分析：
+     参数：
+         size = 6
+     响应：
+         {code:200 , data:[]}
+   业务分析：
+     去redis -> key -> zset -> zrevrange key 0 5(size-1)
+     获取热门题目的id列表
+     热门题目id列表查询热门题目（mybatis-plus ids查询）
+     //校验热门题目是否满足 6个！
+     不满足
+       差几个 6 - 查询的size  =3
+       题库中查询 1.  limit 差的几个 2. 不能是上面热门题目id  3. 根据时间倒序
+     热门题目+补充题目
+     调用之前分页查询封装好的题目填充答案和选项
+     热门题目返回即可
+   实现过程：
+     1. 定义热门题目集合（总集合）
+     2. 去zset中获取热门题目，并且添加到总集合中
+     3. 检查是否已经满足size
+     4. 不满足，题目表中 非热门题目 时间倒序 limit 差数量
+     5. 补充也添加到总集合中
+     6. 总集合一起进行答案和选项填充
+     7. 返回即可
+   注意事项：

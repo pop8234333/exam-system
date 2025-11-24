@@ -1,0 +1,141 @@
+
+1. 查询所有题目分类接口
+   接口分析：
+     参数：无
+     响应：
+          {
+            "code": 200,
+            "message": "操作成功",
+            "data": [
+              {
+                "id": 1,
+                "name": "Java基础",
+                "parentId": 0,
+                "sort": 1,
+                "children": null,
+                "count": 50  # 题目数量
+              }
+            ]
+          }
+   业务分析：
+     查询所有分类和分类的题目数量
+     这是一个多表操作（分类+题目表）
+     分类的题目数量：使用题目表分类字段分组+count聚合即可
+   实现过程：
+     改造下service实现mybatis-plus功能
+     查询所有分类信息
+     [查询所有分类和分类的题目数量
+     进行分类的题目数量赋值]
+     返回对应的列表结果即可
+   注意事项：
+     注意： 只要自己写sql语句，一定要注意逻辑删除！ 必须自己添加！
+     方案1：多表查询 + 子查询 (性能不咋滴！)
+          分类 -》 （category_id , count  题目表进行分组+count) 临时表  on 分类.id = 临时表.categoryId
+          # 进行连表
+          # 1. 必须使用外连接，类别为主的外连接，确保所有类别都查询到！
+          # 2. 必须注意Null -> 0  ifnull
+          select cs.* , ifnull(temp.ct,0)  from  categories cs left join (select category_id,count(*) ct from questions WHERE is_deleted = 0 GROUP BY category_id ) temp on cs.id = temp.category_id where cs.is_deleted = 0;
+     方案2：分步查询 1 (执行一次查询所有分类)+N (每行分类，都触发一次count查询)
+          步骤1： 查询所有未删除的分类信息 select * from categories where is_deleted = 0; -> category对象 count
+          步骤2： 查询每个分类下的总题目数量，根据题目表   select count(*) ct from questions WHERE category_id = #{第一步传入的类别} and is_deleted = 0 GROUP BY category_id
+     方案3：java代码进行逻辑优化和处理
+          步骤1： 查询所有分类信息 -》 list<Category>集合
+          步骤2： 查询题目表，所有分类的总数量 -》 Map<categoryId,count>
+          步骤3： java代码循环一次 -》 list -》count
+2. 查询所有题目分类树状接口
+   接口分析：
+      参数：无
+      响应：
+           {
+             "code": 200,
+             "message": "操作成功",
+             "data": [
+               {
+                 "id": 1,
+                 "name": "Java技术",
+                 "parentId": 0,
+                 "sort": 1,
+                 "count": 85, // 父分类的count是所有子分类count的总和
+                 "children": [
+                   {
+                     "id": 4,
+                     "name": "Java基础",
+                     "parentId": 1,
+                     "sort": 1,
+                     "count": 50, // 自身的count
+                     "children": []
+                   },
+                   {
+                     "id": 5,
+                     "name": "Spring框架",
+                     "parentId": 1,
+                     "sort": 2,
+                     "count": 35,
+                     "children": []
+                   }
+                 ]
+               }
+             ]
+           }
+   业务分析：
+      查询所有分类和分类的题目数量 【平铺】
+      完成树状结构的处理和优化
+      只返回以及分类
+   实现过程：
+      1. 查询所有分类
+      2. 给所有分类进行count填充
+      3. 给所有分类根据parent_id进行分组  parent_id -> 子分类集合 （map）
+      4. 筛选原来分类集合中 parent_id = 0
+      5. 对筛选后的集合进行循环 -》 1. map 找子分类集合 赋值 child 2. 父分类count = 自己count + 所有子分类的count
+      6. 返回分类集合 筛选 + 循环赋值
+   注意事项：
+
+3. 添加题目分类接口
+   接口分析：
+      参数： {json 分类 分类标题 父分类id  排序}
+      响应： 新增成功 / 失败
+   业务分析：
+      就是单表保存
+      利用mybatis-plus save方法即可
+      注意保存前需要判断 同一父分类下，title不能重复！
+   实现过程：
+      先判断
+        parentId = 传入  and name = 传入
+        进行count / baseMapper.exists()
+      再保存
+        save()
+   注意事项：
+      知识点： 可以在当前service获取当前mapper! getBaseMapper();
+
+4. 更新题目分类接口
+   接口分析：
+      参数：{id = x , 其他}
+      响应：
+            {code:200  / code : 500}
+   业务分析：
+      同一父分类下！ 可以跟自己的name重复，不能跟其他的子分类name重复！
+      一级标题也可以修改！
+   实现过程：
+      先判断！
+          同一父分类下！ 可以跟自己的name重复，不能跟其他的子分类name重复！
+      再更新
+   注意事项：
+5. 删除题目分类接口
+   接口分析：
+      参数： /categories/{id}
+      响应：
+            {code:200 / code:500删除失败}
+   业务分析：
+      删除： 1. 逻辑删除 2. 进行防御性编程（别删除正在被引用数据）
+      进行防御性编程 -》 你被别人引用，无法删除 -》 主 {其他重要业务 -》 判断存在，删除失败！} 次 {自己的子数据 -》 级联删除}
+      题目 -》 题目选项 【被他们引用，可以删除，还要删除选项】
+          -》 题目答案 【被他们引用，可以删除，还要删除答案】
+          -》 题目试卷 【被他引用，不应该删除】
+      删除分类：
+          题目引用分类 【有题，不能删除，给与提示！】
+          其他的子分类 【有子分类，也不应该删除！】
+   实现过程：
+     判断不是一级分类！ parentId = 0 不能删除
+     判断分类有没有题目，有不能删除！
+     删除
+   注意事项：

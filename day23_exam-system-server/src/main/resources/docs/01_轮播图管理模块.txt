@@ -1,0 +1,417 @@
+
+1. 查询所有轮播图接口
+   接口分析：
+      参数： 无
+      响应： result / data -> banner集合
+            {
+            	"code": 200,
+            	"message": "操作成功",
+            	"data": [
+            		{
+            			"id": 1,
+            			"title": "智能考试系统介绍",
+            			"description": "基于AI技术的智能考试平台，支持在线考试、智能组卷等功能",
+            			"imageUrl": "https://example.com/images/banner1.jpg",
+            			"linkUrl": "https://example.com/about",
+            			"sortOrder": 1,
+            			"isActive": true,
+            			"createTime": ""
+            		}
+            	]
+            }
+   业务分析：
+      后台轮播图管理
+      查询所有的轮播图信息
+      注意：不能查询逻辑删除
+      注意：需要考虑排序的问题（sort）
+      也就是一个单表的查询
+   实现过程：
+      拼接查询条件
+      进行排序设置（sort正序）
+      进行结果封装 list -> result
+   注意事项：
+      逻辑删除没有实现：
+          局部： 属性 + @TableLogic
+          全局:  application.yaml  - mybatis-plus . global-config . table-logic  - 属性名
+          @TableLogic
+          private Byte isDeleted;
+      返回的时间格式和时区有问题：
+          jackson工具转化的问题，原因：对象 - handlerAdapter (jackson) -  json
+          jackson准备了很多配置注解，来修改json转换问题！ 【jackson-annotations jackson-core jackson-databind】
+          时间格式化：
+               方案1：实体类的属性上 @JsonFormat @JsonFormat(pattern = "yyyy年MM月dd日 HH:mm:ss" ,timezone = "GMT+8") 【逐一添加】
+               方案2：jackson也集成了springboot,springboot提供了统一的配置管理json的相关的配置（application.yml）
+                     spring:
+                       jackson:
+                         date-format: yyyy-MM-dd HH:mm:ss
+                         time-zone: GMT+8
+          扩展两个注解：
+               @JsonProperty: 指定实体类属性名转化的jsonkey,也指定属性名接收的json的可以！
+                     例如： int id; @JsonProperty(uid)  -> {"uid":1} -> 接收 {uid}
+               @JsonIgnore: 忽略某个实体类的属性，不返回json,也不接收json! 忽略isDeleted属性
+
+2. 查询激活轮播图接口
+   接口分析：
+      参数： 无
+      响应：
+            {
+            	"code": 200,
+            	"message": "操作成功",
+            	"data": [
+            		{
+            			"id": 1,
+            			"title": "智能考试系统介绍",
+            			"description": "基于AI技术的智能考试平台，支持在线考试、智能组卷等功能",
+            			"imageUrl": "https://example.com/images/banner1.jpg",
+            			"linkUrl": "https://example.com/about",
+            			"sortOrder": 1,
+            			"isActive": true, 激活状态的！
+            			"createTime": ""
+            		}
+            	]
+            }
+   业务分析：
+        前台需要的轮播图信息
+        确保是激活状态
+        确保sort字段进行排序（正序）
+        注意逻辑删除
+        注意时间格式
+   实现过程：
+        拼接查询条件
+        激活状态=true
+        添加排序字段sort正序
+        进行数据查询
+        结果拼接
+   注意事项：
+        无 已经上一次解决了！
+
+3. 切换轮播图状态接口
+   接口分析：
+      参数： path -> id  query -> isActive 修改状态
+      响应：
+           {
+           	"code": 200,
+           	"message": "操作成功",
+           	"data": ""
+           }
+   业务分析：
+      完成轮播图状态的切换
+      不会影响后台管理页面
+      只会影响前台的显示
+   实现过程：
+      创建UpdateWrapper
+      设置修改的条件
+      设置修改的值
+      执行修改
+      返回结果，结果只有描述信息message
+      返回结果要判断下，可能成功可能失败！ 【查询不用判断！ 删除 ，修改 ，添加都需要判断！】
+   注意事项：
+      无
+4. 删除轮播图信息接口
+   接口分析：
+     参数：
+        路径传参  id
+     响应：
+        {
+        	"code": 200,
+        	"message": "操作成功",
+        	"data": ""
+        }
+   业务分析：
+      根据id删除对应轮播图
+      使用逻辑删除，逻辑删除已经配置成功！
+      除了查询，建议都添加判断！
+   实现过程：
+      直接调用业务根据id删除
+      判断返回结果
+   注意事项：
+      无
+5. 获取轮播图详情接口
+   接口分析：
+     参数： path id
+     响应：
+           {
+           	"code": 200,
+           	"message": "操作成功",
+           	"data": {
+           		"id": 1,
+           		"title": "智能考试系统介绍",
+           		"description": "基于AI技术的智能考试平台，支持在线考试、智能组卷等功能",
+           		"imageUrl": "https://example.com/images/banner1.jpg",
+           		"linkUrl": "https://example.com/about",
+           		"sortOrder": 1,
+           		"isActive": true,
+           		"createTime": ""
+           	}
+           }
+   业务分析：
+      根据id，查询对应的轮播图信息
+      返回拼接结果
+      注意逻辑删除，但是已经实现
+   实现过程：
+      直接调用业务根据id查询方法（getById）
+      拼接返回结果即可
+   注意事项：
+6. 通用文件上传业务
+   接口分析：无，没有参数，不是接口，被其他接口调用的业务方法！
+           方法（MultiPartFile file,String folder）
+           参数1: 因为我们的业务就是为其他接口提供文件上传核心代码！其他接口接收的文件类型就是MultiPartFile!
+           参数2：我们编写了核心业务，为了区分，上传文件类型，我们要求调用者给我们传递一个文件，分别防止！ 例如： 轮播图 banners
+   业务分析：
+      springboot项目中集成minio! MinioClient加入到核心容器，避免反复连接！提高效率！
+      使用minio文件上传代码，完成文件上传，返回可以访问的地址！
+   实现过程：
+      springboot集成minio（集成所有没有场景启动的第三方步骤）
+         步骤1： 导入相关依赖
+                <dependency>
+                    <groupId>io.minio</groupId>
+                    <artifactId>minio</artifactId>
+                    <version>8.5.7</version>
+                </dependency>
+         步骤2： 定义配置参数接收的实体类 【将参数可以转移到application.yml】
+                端点 minio.endpoint  账号 minio.username 密码 minio.password  桶名 mimio.bucket-name
+                application.yaml  -> minio.xxx -> MinioProperties -> MinioConfiguration -> @Autowired MinioProperties -> @Bean方法使用参数即可
+                @ConfigurationProperties(prefix = "minio")
+                @Data
+                public class MinioProperties {
+
+                //    端点 minio.endpoint  账号 minio.username 密码 minio.password  桶名 mimio.bucket-name
+                    private String endpoint;
+                    private String username;
+                    private String password;
+                    // @Value() //依赖注入！ 非引用类型！
+                    private String bucketName;
+
+                    /*
+                         yaml              java         数据库
+                       bucket-name       bucketName    bucket_name
+                     */
+                }
+                注意1：属性名是驼峰式，yaml中可以使用 - 中划线，springboot自动帮我们转化！！
+                注意2：使用了批量读取或者@Value读取，要求当前类必须加入到核心容器！
+                     方案1：（饿汉）立即加入  @Component + 启动类扫描！ @ComponentScan
+                     方案2：（懒汉）应用时，在加入！ @EnableConfigurationProperties(XxxProperties.class) [推荐]
+         步骤3： 定义minio的配置类
+                配置类中完成MinioClient的实例化
+                加入到ioc容器
+                同时也会使用MinioProperties
+                @Slf4j
+                @Configuration
+                @EnableConfigurationProperties(MinioProperties.class)
+                public class MinioConfiguration {
+
+                    @Autowired
+                    private MinioProperties minioProperties;
+
+                    @Bean
+                    public MinioClient minioClient() {
+                        MinioClient minioClient = MinioClient.builder()
+                                .endpoint(minioProperties.getEndpoint())
+                                .credentials(minioProperties.getUsername(), minioProperties.getPassword())
+                                .build();
+                        log.info("完成了minio的连接和配置！minio客户端对象为：{}",minioClient);
+                        return minioClient;
+                    }
+                }
+      使用minio的文件上传代码步骤
+         步骤1：定义业务接口方法
+               /**
+                * 实现文件上传的核心业务方法！
+                * @param folder 不同上传位置的文件夹！ 例如： 轮播图 banners
+                * @param file 上传的文件封装对象！
+                * @return 可以访问的文件地址
+                */
+               String uploadFile(String folder, MultipartFile file) throws Exception;
+         步骤2：完成业务接口的方法实现
+               @Autowired
+               private MinioClient minioClient;
+               @Autowired
+               private MinioProperties minioProperties;
+
+               @Override
+               public String uploadFile(String folder, MultipartFile file) throws Exception {
+                   //1. 判断桶是否存在
+                   boolean bucketExists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(minioProperties.getBucketName()).build());
+                   //2. 不存在，创建桶，同时设置访问权限
+                   if (!bucketExists) {
+                       //创建桶
+                       minioClient.makeBucket(MakeBucketArgs.builder().bucket(minioProperties.getBucketName()).build());
+                       String config = """
+                                   {
+                                         "Statement" : [ {
+                                           "Action" : "s3:GetObject",
+                                           "Effect" : "Allow",
+                                           "Principal" : "*",
+                                           "Resource" : "arn:aws:s3:::%s/*"
+                                         } ],
+                                         "Version" : "2012-10-17"
+                                   }
+                               """.formatted(minioProperties.getBucketName());
+                       minioClient.setBucketPolicy(SetBucketPolicyArgs.builder()
+                                       .bucket(minioProperties.getBucketName())
+                                       .config(config)
+                               .build());
+                   }
+                   //3. 处理上传的对象名（影响，minio桶中的文件结构！）
+                   //现在： exam0625 / folder / ai.png  缺点： 所有文件都平铺（banner，video）不好区分！ 核心缺点，可能覆盖！
+                   //小知识点： x/x/x.png -> exam0625 /x/x/ x.png
+                   //解决覆盖问题： 确保对象和文件的名字唯一即可！！ uuid - - -
+                   //1.需要添加文件夹 2.添加uuid确保不重复
+                   String objectName = folder + "/" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + "/" +
+                           UUID.randomUUID().toString().replaceAll("-","")+"_"+ file.getOriginalFilename();
+
+                   log.debug("文件上传核心业务方法，处理后的文件对象名：{}",objectName);
+
+                   //4. 上传文件 putObject方法
+                   //putObject . 上传文件数据 .steam(文件输入流)
+                   //uploadObject .上传文件数据 .filename(文件的磁盘地址 c:\\)
+                   minioClient.putObject(PutObjectArgs.builder()
+                                   .bucket(minioProperties.getBucketName())
+                                   .contentType(file.getContentType())
+                                   .object(objectName) //对象
+                                   .stream(file.getInputStream(),file.getSize(),-1) //-1 我们不指定文件切割大小！让minio自动处理！
+                           .build());
+
+                   //5. 拼接回显地址 【端点 + 桶 + 对象名】
+                   String url = String.join("/", minioProperties.getEndpoint(), minioProperties.getBucketName(), objectName);
+                   log.info("文件上传核心业务，完成{}文件上传，返回地址为：{}",objectName,url);
+                   return url;
+               }
+   注意事项：
+      文件上传业务显示的抛出了异常！ 我们定义一个全局异常处理器！！
+      步骤1： 定义全局异常处理器
+      步骤2: 定义一个处理Exception handler方法
+      步骤3： handler中进行异常记录和客户端提示
+          @Slf4j
+          @RestControllerAdvice
+          public class GlobalExceptionHandler {
+
+              @ExceptionHandler(Exception.class)
+              public Result exception(Exception e) {
+                  //记录异常日志
+                  log.error("服务器发生运行时异常！异常信息为：{}",e.getMessage());
+                  //返回对应的提示
+                  return Result.error(e.getMessage());
+              }
+          }
+      后续的思考：有了全局异常处理器，就可以使用 【异常流】
+
+7. 上传轮播图信息接口
+   接口分析：
+      参数：
+          请求体中传递文件数据！
+      响应：
+          {
+          	"code": 200,
+          	"message": "操作成功",
+          	"data": "imgUrl访问地址"
+          }
+   业务分析：
+      接收上传的文件
+      做banner基础的校验
+      校验通过调用文件上传业务
+      返回地址即可
+   实现过程：
+      接收文件
+      非空校验  【异常流派】
+      格式校验（image）【异常流派】
+      大小校验【可以省略 （spring 6.0以后，自动添加了一个校验！）】
+      调用文件上传业务
+      返回图片回显地址
+   注意事项：
+      spring对上传文件的默认大小限制，以及如何修改！
+      注意：我们无需再代码中进行参数校验！spring默认大小校验！
+      默认大小： 10MB
+      修改：
+          spring:
+            servlet:
+              multipart:
+                max-request-size: 150MB
+                max-file-size: 100MB
+
+8. 保存轮播图信息接口
+   接口分析：
+      参数：
+         {
+           "title": "智能考试系统介绍",
+           "description": "基于AI技术的智能考试平台，支持在线考试、智能组卷等功能",
+           "imageUrl": "https://example.com/images/banner1.jpg",
+           "linkUrl": "https://example.com/about",
+           "sortOrder": 1,
+           "isActive": true
+         }
+      响应：
+         {
+         	"code": 200,
+         	"message": "操作成功",
+         	"data": ""
+         }
+   业务分析：
+      检查默认参数 order 和 isActive
+      如果为null，给与默认值
+      进行轮播图信息保存
+      判断反馈结果
+   实现过程：
+      检查默认参数 order 和 isActive
+      如果为null，给与默认值
+      进行轮播图信息保存
+      判断反馈结果
+   注意事项：
+      自动填充问题：
+        banner  isActive 和 sortOrder这类，属于专属的属性！他有其他没有！这类自己业务填充！ if( == null) -> 赋值！
+        createTime updateTime isDeleted 这类属于通用属性，大家都有！我们手动填充，业务会出现大量的重复！
+      解决方案：
+        1. 数据库维度mysql维度
+            default 0  / DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            推荐：固定值 is_deleted default 0 ;  不推荐时间填充：跟mysql版本有关系和时区影响！
+        2. mybatis-plus的维度
+            提供自动填充功能，插入数据和修改数据之前，拦截数据，可以指定添加数据内容！
+            实现时间的填充！ 固定值 is_deleted可以，没必要！
+      使用步骤：
+        1. 要填充的属性上，指定填充规则（什么时候触发）
+           @TableFiled(fill = Fill.INSERT)
+           @TableFiled(fill = Fill.UPDATE)
+        2. 定义一个填充处理的类，必须实现接口MetaObjectHandler
+           @Slf4j
+           @Component
+           public class MyMetaObjectHandler implements MetaObjectHandler {
+
+               @Override
+               public void insertFill(MetaObject metaObject) {
+                   log.info("开始插入填充...");
+                   this.strictInsertFill(metaObject, "createUserId", Long.class, 123456L)
+                   this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
+               }
+
+               @Override
+               public void updateFill(MetaObject metaObject) {
+                   log.info("开始更新填充...");
+                   this.strictInsertFill(metaObject, "updateUserId", Long.class, 123456L)
+                   this.strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
+               }
+           }
+9. 更新轮播图信息接口
+   接口分析：
+      参数：
+         {
+           "id": 1,
+           "title": "智能考试系统介绍",
+           "description": "基于AI技术的智能考试平台，支持在线考试、智能组卷等功能",
+           "imageUrl": "https://example.com/images/banner1.jpg",
+           "linkUrl": "https://example.com/about",
+           "sortOrder": 1,
+           "isActive": true
+         }
+      响应：
+       {
+       	"code": 200,
+       	"message": "操作成功",
+       	"data": ""
+       }
+   业务分析：
+      校验下isActive和sortOrder
+      修改需要自动填充修改时间（已经处理）
+      修改可能失败，修改之前可能有人删除！
+      修改结果校验
+   实现过程：
+   注意事项：

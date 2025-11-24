@@ -1,0 +1,271 @@
+
+1. 导入xlsx模版下载功能
+   接口分析：
+      参数： 无
+      返回： xlsx文件对象
+   业务分析：
+      文件下载
+      导入poi依赖和环境
+      使用execlUtils生成模块字节数组
+      ResponseEntity写出即可
+   实现过程：
+       导入poi依赖和环境
+       使用execlUtils生成模块字节数组
+       ResponseEntity写出即可
+   注意事项：
+       注意：前端下载使用相对地址 触发了代理器！
+            修改 vite.config.js  8081 - 8080
+
+2. execl导入数据预览
+   接口分析：
+      参数：
+         导入execl文件对象
+      响应：
+         集合 QuestionImportVo
+   业务分析：
+       execl -> List<QuestionImportVo>
+   实现过程：
+       1. 参数校验 文件不能为null || 文件是xls或者xlsx
+       2. 调用解析方法
+       3. 返回结果
+   注意事项：
+
+3. 预览数据批量导入
+   接口分析：
+      参数：
+         [
+           {
+              QuestionImportVo  [题目的信息属性 title 难度 多选 -  答案 String - List<ChoiceVo>]
+           },
+           {
+              QuestionImportVo  [题目的信息属性 title 难度 多选 -  答案 String - List<ChoiceVo>]
+           }
+         ]
+      响应：
+        {
+           code:200
+           data: 一共要导入 20道题！ 成功了18道！！
+        }
+   业务分析：
+      1. QuestionImportVo -》 Question
+      2. 循环调用之前定义的save [分别保存，失败了还能继续！]
+      3. 循环保存再做计数  不报错 + 1成功...
+   实现过程：
+      1. 定义一个vo - question方法
+      2. for循环
+          for
+            try
+               单条保存
+               //保存成功的数量
+            catch(){
+               提示
+            }
+      3. 拼接响应字符串即可
+   注意事项：
+      批量，允许内部有失败！ for + try
+      有尝试机制！ for + try
+      kimi -> for try kimi + catch  -> 题目
+
+4. 预览文件批量导入（备用接口）
+   接口分析：
+      参数：
+           execl -> file对象
+      响应：
+            {
+                      code:200
+                      data: 一共要导入 20道题！ 成功了18道！！
+            }
+   业务分析：
+       1. 将file - Vo集合
+       2. 调用批量导入业务方法即可
+   实现过程：
+       1. 校验 （非空 xls xlsx ）
+       2. 进行转化 ExeclUtils
+       3. 调用批量导入业务
+       4. 正常返回成功数量
+   注意事项：
+
+5. ai批量题目生成（预览）
+   接口分析：
+      参数：
+           上下文缓存   -》 提示词
+           {
+             "topic": "Java面向对象编程",
+             "count": 5,
+             "types": "CHOICE,JUDGE,TEXT",
+             "difficulty": "MEDIUM",
+             "categoryId": 1,
+             "includeMultiple": false,
+             "requirements": "重点考察实际应用，包含代码示例"
+           }
+      响应：
+           【{QuestionImportVo}】
+   业务分析：
+       1. webClient+kimi参数集成（webClient + kimi）
+       2. 调用提示词生成方法生成提示词（上下文）
+       3. 进行kimi调用并获取结果（设计失败重试机制 3次）
+       4. 进行结果解析 + QuestionImportVo
+   实现过程：
+       1. webClient+kimi参数集成
+           步骤1：导入依赖 【jackson放开】
+           步骤2：定义KimiProperties [模型 api-key uri 温度 max-tokens ]
+                 @ConfigurationProperties(prefix = "kimi.api")
+                 @Data
+                 public class KimiProperties {
+                     private String model;
+                     private String uri;
+                     private String apiKey;
+                     private Integer maxTokens;
+                     private Double temperature;
+                 }
+
+                 kimi:
+                   api:
+                     model: moonshot-v1-32k
+                     uri: https://api.moonshot.cn/v1/chat/completions
+                     api-key: sk-0FjcIWCa6i6jvSu3RMHVk8ujkL8FcsoRvtkg119jij7FQB2T
+                     max-tokens: 2048
+                     temperature: 0.3
+           步骤3：定义webCient的配置类
+                 @Configuration
+                 @EnableConfigurationProperties(KimiProperties.class)
+                 public class WebClientConfiguration {
+
+
+                     @Autowired
+                     private KimiProperties kimiProperties;
+
+                     @Bean
+                     public WebClient webClient() {
+                         WebClient webClient = WebClient.builder().
+                                 baseUrl(kimiProperties.getUri())
+                                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                                 .defaultHeader("Authorization", "Bearer " + kimiProperties.getApiKey())
+                                 .build();
+                         return webClient;
+                     }
+                 }
+       2. 导入提示词生成方法
+       3. 编写kimi调用和尝试方法
+          int maxTry = 3; //最多重试3次
+          for (int i = 1; i <= 3; i++) {
+              try {
+                  webClient网络调用！！
+                  if (访问直接报错 error){
+                      throw new RuntimeException("访问错误了，错误信息为！！meessage");
+                  }
+                  if (解析结果 choice / message / content == null ){
+                      throw new RuntimeException("没有结果");
+                  }
+                  return content;
+              }catch (Exception e){
+                  //打印信息
+                  第几次尝试 i 次！
+                  if( i == maxTry){
+                      throw new RuntimeException("已经重试3次！依然失败！");
+                  }
+              }
+          }
+
+            /**
+               *
+               * 进行失败重试 给3次机会！！！
+               *    kimi失败场景
+               *      假失败 -》 调用成功 1. 结果格式不对  2. 速率限制 -> try
+               *        |
+               *      真失败 -》 抛出异常 -> catch
+               * 封装调用kimi模型，最终返结果
+               * @param prompt
+               * @return 返回生成题目json 结果 / choices / message / content
+               */
+              @Override
+              public String callKimiAi(String prompt) throws InterruptedException {
+
+                  int maxTry = 3; //最多重试3次
+                  for (int i = 1; i <= 3; i++) {
+                      try {
+
+                          //请求体的内容 https://platform.moonshot.cn/docs/api/chat#%E8%AF%B7%E6%B1%82%E5%86%85%E5%AE%B9
+                          Map<String,String> userMap = new HashMap<>();
+                          userMap.put("role","user");
+                          userMap.put("content",prompt); //提示词
+                          List<Map> messagesList = new ArrayList<>();
+                          messagesList.add(userMap);
+
+                          Map<String,Object> requestBody = new HashMap<>();
+                          requestBody.put("model",kimiProperties.getModel());
+                          requestBody.put("messages",messagesList);
+                          requestBody.put("temperature", kimiProperties.getTemperature());
+                          requestBody.put("max_tokens", kimiProperties.getMaxTokens());
+
+                          //2. 发起网络请求调用
+                          Mono<String> stringMono = webClient.post()
+                                  .bodyValue(requestBody)
+                                  .retrieve() //准备了
+                                  .bodyToMono(String.class)
+                                  .timeout(Duration.ofSeconds(100));
+
+                          //webClient异步请求
+                          //同步
+                          String result = stringMono.block();
+                          //jackson工具！ JsonObject JsonArray
+                          JSONObject resultJsonObject = JSONObject.parseObject(result);
+
+                          //错误结果：https://platform.moonshot.cn/docs/api/chat#错误说明
+                          if (resultJsonObject.containsKey("error")){
+                              throw new RuntimeException("访问错误了，错误信息为:" +
+                                      resultJsonObject.getJSONObject("error").getString("message") );
+                          }
+                          //正确结果：https://platform.moonshot.cn/docs/api/chat#%E8%BF%94%E5%9B%9E%E5%86%85%E5%AE%B9
+                          //获取返回内容content
+                          // ```json  ```
+                          String content = resultJsonObject.getJSONArray("choices").getJSONObject(0).
+                                  getJSONObject("message").getString("content");
+                          log.debug("调用kimi返回的结果为：{}",content);
+
+                          if (content == null || content.isEmpty()){
+                              throw new RuntimeException("调用成功！但是没有返回结果！！");
+                          }
+                          return content;
+                      }catch (Exception e){
+                          //打印信息
+                          log.debug("第{}次尝试调用失败了！",i);
+                          Thread.sleep(1000);
+          //                第几次尝试 i 次！
+                          if(i == maxTry){
+                              e.printStackTrace();
+                              throw new RuntimeException("已经重试3次！依然失败！请稍后再试！！");
+                          }
+                      }
+                  }
+                  throw new RuntimeException("已经重试3次！依然失败！请稍后再试！！");
+              }
+
+       4. 整合方法并结果解析
+           QuestionBatchController
+               @Autowired
+                  private KimiAiService kimiAiService;
+
+                  /**
+                   * 使用AI生成题目（预览，不入库）
+                   * @param request AI生成请求参数
+                   * @return 生成的题目列表
+                   */
+                  @PostMapping("/ai-generate")  // 处理POST请求
+                  @Operation(summary = "AI智能生成题目", description = "使用AI技术根据指定主题和要求智能生成题目，支持预览后再决定是否导入")  // API描述
+                  public Result<List<QuestionImportVo>> generateQuestionsByAi(
+                          @RequestBody @Validated AiGenerateRequestVo request) {
+                      List<QuestionImportVo> questionImportVoList = kimiAiService.aiGenerateQuestions(request);
+                      log.info("使用ai生成：{} 为标题的题目成功！ 计划生成：{}道题，实际生成：{}道题！",
+                              request.getTopic(),request.getCount(),questionImportVoList.size());
+                     return Result.success(questionImportVoList);
+                  }
+
+          KimiService 生成方法
+   注意事项：
+     1. 练习下webClient + kimi + https://platform.moonshot.cn/docs/api/chat#%E5%85%AC%E5%BC%80%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%9C%B0%E5%9D%80
+        参数
+        响应
+        错误响应
+     2. 实现功能
+
