@@ -106,6 +106,6 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner> impleme
         if (!isSuccess) {
             throw new RuntimeException("轮播图更新失败!");
         }
-        log.info("轮播图更新失败!");
+        log.info("轮播图更新成功!");
     }
 }
