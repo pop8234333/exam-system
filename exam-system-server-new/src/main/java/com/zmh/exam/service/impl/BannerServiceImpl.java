@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -62,5 +63,49 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner> impleme
         //5. 返回结果
         log.info("完成banner图片上传，图片回显地址：{}",imgUrl);
         return imgUrl;
+    }
+
+    /**
+     *    确认时间 创建和修改时间赋值
+     *    确认激活状态true
+     *    确认优先级没有默认 0
+     *    进行保存即可
+     *    单表动作，直接调用mybatis-plus业务层
+     * @param banner
+     */
+    @Override
+    public void addBanner(Banner banner) {
+        //1.确认banner createTime和updateTime有时间
+        //方式1：数据库设置时间  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+        //方案2：代码时间赋值   set new Date();
+        //方案3：使用mybatis-plus自动填充功能 [知识点中会说明]
+
+        //2.判断下启动状态,如果没设置默认为激活状态
+        if (banner.getIsActive() == null){
+            banner.setIsActive(true);
+        }
+        //3.判断优先级,如果没设置,默认为0
+        if (banner.getSortOrder() == null){
+            banner.setSortOrder(0);
+        }
+
+        //4.进行保存
+        boolean isSuccess = save(banner);
+
+        if (!isSuccess) {
+            throw new RuntimeException("轮播图保存失败！");
+        }
+
+        log.info("轮播图保存成功！！");
+
+    }
+
+    @Override
+    public void updateBanner(Banner banner) {
+        boolean isSuccess = updateById(banner);
+        if (!isSuccess) {
+            throw new RuntimeException("轮播图更新失败!");
+        }
+        log.info("轮播图更新失败!");
     }
 }
