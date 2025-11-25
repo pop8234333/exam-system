@@ -58,7 +58,12 @@ public class BannerController {
     @GetMapping("/list")  // 处理GET请求
     @Operation(summary = "获取所有轮播图", description = "获取所有轮播图列表，包括启用和禁用的，供管理后台使用")  // API描述
     public Result<List<Banner>> getAllBanners() {
-        return Result.success(null);
+        //1.拼接条件，进行排序
+        LambdaQueryWrapper<Banner> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.orderByAsc(Banner::getSortOrder); //根据sort正序排序
+        List<Banner> list = bannerService.list(lambdaQueryWrapper);
+        log.info("查询所有后台需要的轮播信息业务执行成功！结果为：{}",list);
+        return Result.success(list,"查询所有banner信息成功！");
     }
     
     /**
