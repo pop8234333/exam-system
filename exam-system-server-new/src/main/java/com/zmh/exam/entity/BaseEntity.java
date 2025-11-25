@@ -16,7 +16,6 @@ public class BaseEntity implements Serializable {
     private Long id;
 
     @Schema(description = "创建时间")
-    @JsonIgnore
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private Date createTime;
 
@@ -26,7 +25,7 @@ public class BaseEntity implements Serializable {
      */
     @JsonIgnore
     @Schema(description = "修改时间")
-    @TableField(value = "update_time", fill = FieldFill.UPDATE)
+    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)//在创建和更新的时候都会刷新时间
     private Date updateTime;
 
     @Schema(description = "逻辑删除")
