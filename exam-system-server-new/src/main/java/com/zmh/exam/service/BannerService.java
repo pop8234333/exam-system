@@ -21,4 +21,7 @@ public interface BannerService extends IService<Banner> {
      */
     String upload(MultipartFile file) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException;
 
-} 
+    void addBanner(Banner banner);
+
+    void updateBanner(Banner banner);
+}

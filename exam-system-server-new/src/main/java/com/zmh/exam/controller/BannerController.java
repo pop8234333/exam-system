@@ -112,18 +112,25 @@ public class BannerController {
         }
         return Result.error("轮播图不存在");
     }
-    
+
     /**
-     * 添加轮播图
+     * 实现思路：
+     *    确认时间 创建和修改时间赋值
+     *    确认激活状态true
+     *    确认优先级没有默认 0
+     *    进行保存即可
+     *    单表动作，直接调用mybatis-plus业务层
+     * 添加轮播图git
      * @param banner 轮播图对象
      * @return 操作结果
      */
     @PostMapping("/add")  // 处理POST请求
     @Operation(summary = "添加轮播图", description = "创建新的轮播图，需要提供图片URL、标题、跳转链接等信息")  // API描述
     public Result<String> addBanner(@RequestBody Banner banner) {
-        return null;
+        bannerService.addBanner(banner);
+        return Result.success("添加轮播图成功！");
     }
-    
+
     /**
      * 更新轮播图
      * @param banner 轮播图对象
@@ -132,7 +139,8 @@ public class BannerController {
     @PutMapping("/update")  // 处理PUT请求
     @Operation(summary = "更新轮播图", description = "更新轮播图的信息，包括图片、标题、跳转链接、排序等")  // API描述
     public Result<String> updateBanner(@RequestBody Banner banner) {
-        return null;
+         bannerService.updateBanner(banner);
+        return Result.success("更新轮播图成功!");
     }
 
     /**
