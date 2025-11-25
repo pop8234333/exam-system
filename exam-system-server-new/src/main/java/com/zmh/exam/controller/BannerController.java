@@ -131,8 +131,12 @@ public class BannerController {
     public Result<String> deleteBanner(@Parameter(description = "轮播图ID") @PathVariable Long id) {
         return null;
     }
-    
+
     /**
+     * 实现逻辑：
+     *    单表操作
+     *    根据id更新banner状态
+     *    状态可能是启用，也可以是禁用
      * 启用/禁用轮播图
      * @param id 轮播图ID
      * @param isActive 是否启用
@@ -143,6 +147,16 @@ public class BannerController {
     public Result<String> toggleBannerStatus(
             @Parameter(description = "轮播图ID") @PathVariable Long id, 
             @Parameter(description = "是否启用，true为启用，false为禁用") @RequestParam Boolean isActive) {
-        return null;
+
+        boolean updated = bannerService.update()
+                .lambda()
+                .set(Banner::getIsActive, isActive)
+                .eq(Banner::getId, id)
+                .update();
+        if (updated) {
+            log.info("轮播图状态修改成功，修改后的状态为：{}",isActive);
+            return Result.success("轮播图状态修改成功！");
+        }
+        return Result.error("轮播图状态修改失败！");
     }
 } 
