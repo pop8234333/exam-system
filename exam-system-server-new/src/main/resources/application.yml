@@ -1,9 +1,12 @@
 spring:
+
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+
   application:
     name: exam-system-server-new
+
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     url: jdbc:mysql://192.168.10.101:3306/exam_system_new?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2b8
@@ -17,6 +20,11 @@ spring:
       maximum-pool-size: 12 #连接池最大连接数，默认是10
       minimum-idle: 10 #最小空闲连接数量
       pool-name: SPHHikariPool # 连接池名称
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 150MB
 
 #用于打印框架生成的sql语句，便于调试
 mybatis-plus:

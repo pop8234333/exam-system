@@ -76,12 +76,13 @@ public class FileUploadServiceImpl implements FileUploadService {
             log.debug("文件上传核心业务方法，处理后的文件对象名：{}",objectName);
 
             //4.上传文件对象
-            //上传图片
-            minioClient.uploadObject(
-                    UploadObjectArgs.builder()
+            //使用putObject方法上传MultipartFile，而不是uploadObject方法
+            minioClient.putObject(
+                    PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectName)
-                            .filename(file.getOriginalFilename())
+                            .stream(file.getInputStream(), file.getSize(), -1)
+                            .contentType(file.getContentType())
                             .build());
             System.out.println("上传成功");
             //5.拼接访问地址
