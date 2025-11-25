@@ -44,15 +44,25 @@ public class BannerController {
 
         return Result.success("上传图片地址", "图片上传成功");
     }
-    
+
     /**
+     * 实现逻辑：
+     *    单表查询
+     *    条件 = 激活状态 true
+     *    根据优先级排序
      * 获取启用的轮播图（前台首页使用）
      * @return 轮播图列表
      */
     @GetMapping("/active")  // 处理GET请求
     @Operation(summary = "获取启用的轮播图", description = "获取状态为启用的轮播图列表，供前台首页展示使用")  // API描述
     public Result<List<Banner>> getActiveBanners() {
-        return Result.success(null);
+        LambdaQueryWrapper<Banner> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Banner::getIsActive, true);
+        queryWrapper.orderByAsc(Banner::getSortOrder);
+        List<Banner> list = bannerService.list(queryWrapper);
+        log.info("查询前台需要的激活状态轮播信息业务执行成功！结果为：{}",list);
+
+        return Result.success(list,"查询前端所需轮播图成功！");
     }
     
     /**
@@ -74,7 +84,7 @@ public class BannerController {
         lambdaQueryWrapper.orderByAsc(Banner::getSortOrder); //根据sort正序排序
         List<Banner> list = bannerService.list(lambdaQueryWrapper);
         log.info("查询所有后台需要的轮播信息业务执行成功！结果为：{}",list);
-        return Result.success(list,"查询所有banner信息成功！");
+        return Result.success(list,"查询所有轮播图信息成功！");
     }
     
     /**
