@@ -23,6 +23,7 @@ public class BaseEntity implements Serializable {
 
     @Schema(description = "逻辑删除")
     @TableField("is_deleted")
+    @TableLogic
     private Byte isDeleted;
 
 }

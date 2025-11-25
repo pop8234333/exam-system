@@ -3,6 +3,7 @@ package com.zmh.exam.controller;
 
 import com.zmh.exam.common.Result;
 import com.zmh.exam.entity.Banner;
+import com.zmh.exam.service.BannerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,6 +23,8 @@ import java.util.Map;
 @CrossOrigin  // 允许跨域访问
 @Tag(name = "轮播图管理", description = "轮播图相关操作，包括图片上传、轮播图增删改查、状态管理等功能")  // Swagger API分组
 public class BannerController {
+    @Autowired
+    private BannerService bannerService;
 
     
     /**

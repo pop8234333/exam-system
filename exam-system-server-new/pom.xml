@@ -66,7 +66,12 @@
             <artifactId>minio</artifactId>
             <version>8.6.0</version>
         </dependency>
-
+        <!-- 显式补上真正有 class 的 JVM 版 OkHttp -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp-jvm</artifactId>
+            <version>5.1.0</version>
+        </dependency>
         <!-- Jackson JSON处理 -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
