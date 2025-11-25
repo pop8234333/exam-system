@@ -86,8 +86,13 @@ public class BannerController {
         log.info("查询所有后台需要的轮播信息业务执行成功！结果为：{}",list);
         return Result.success(list,"查询所有轮播图信息成功！");
     }
-    
+
     /**
+     * 实现思路：
+     *    单表普通查询
+     *    根据id查询
+     *    注意逻辑删除，不过已经实现
+     * 接口前期设计，但是前端并未调用，而是直接记录上次列表数据实现的！！
      * 根据ID获取轮播图
      * @param id 轮播图ID
      * @return 轮播图详情
@@ -95,8 +100,12 @@ public class BannerController {
     @GetMapping("/{id}")  // 处理GET请求
     @Operation(summary = "根据ID获取轮播图", description = "根据轮播图ID获取单个轮播图的详细信息")  // API描述  
     public Result<Banner> getBannerById(@Parameter(description = "轮播图ID") @PathVariable Long id) {
-
-      return Result.error("轮播图不存在");
+        Banner banner = bannerService.getById(id);
+        if (banner != null) {
+            log.info("查询后台需要的轮播信息业务执行成功！结果为：{}",banner);
+            return Result.success(banner,"查询轮播图详情成功！");
+        }
+        return Result.error("轮播图不存在");
     }
     
     /**
@@ -120,8 +129,12 @@ public class BannerController {
     public Result<String> updateBanner(@RequestBody Banner banner) {
         return null;
     }
-    
+
     /**
+     * 实现逻辑：
+     *    单表操作
+     *    逻辑删除
+     *    已经配置直接调用业务即可
      * 删除轮播图
      * @param id 轮播图ID
      * @return 操作结果
@@ -129,7 +142,12 @@ public class BannerController {
     @DeleteMapping("/delete/{id}")  // 处理DELETE请求
     @Operation(summary = "删除轮播图", description = "根据ID删除指定的轮播图")  // API描述
     public Result<String> deleteBanner(@Parameter(description = "轮播图ID") @PathVariable Long id) {
-        return null;
+        boolean b = bannerService.removeById(id);
+        if (b){
+            log.info("删除轮播图数据成功！删除id为：{}",id);
+            return Result.success("轮播图数据删除成功！");
+        }
+        return Result.error("轮播图数据删除失败！");
     }
 
     /**
