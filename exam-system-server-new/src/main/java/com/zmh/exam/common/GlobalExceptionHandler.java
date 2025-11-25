@@ -19,9 +19,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = Exception.class)
     public Result<Exception> handleException(Exception e) {
-        log.error("服务器发生运行时异常！", e);
         //记录异常日志
-        log.error("服务器发生运行时异常！异常信息为：{}",e.getMessage());
+        log.error("服务器发生运行时异常！异常信息为：{}",e.getMessage(),e);
         return Result.error("服务器发生运行时异常！");
     }
 
