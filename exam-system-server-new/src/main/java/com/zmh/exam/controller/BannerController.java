@@ -1,12 +1,15 @@
 package com.zmh.exam.controller;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.zmh.exam.common.Result;
 import com.zmh.exam.entity.Banner;
 import com.zmh.exam.service.BannerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,10 +24,11 @@ import java.util.Map;
 @RestController  // REST控制器，返回JSON数据
 @RequestMapping("/api/banners")  // 轮播图API路径前缀
 @CrossOrigin  // 允许跨域访问
+@RequiredArgsConstructor
+@Slf4j
 @Tag(name = "轮播图管理", description = "轮播图相关操作，包括图片上传、轮播图增删改查、状态管理等功能")  // Swagger API分组
 public class BannerController {
-    @Autowired
-    private BannerService bannerService;
+    private final BannerService bannerService;
 
     
     /**
@@ -52,6 +56,13 @@ public class BannerController {
     }
     
     /**
+     * 实现逻辑：
+     *    单表查询
+     *    根据优先级倒序
+     * 注意：
+     *    逻辑删除
+     *    逻辑删除字段和更新时间字段不返回
+     *    创建时间格式化问题
      * 获取所有轮播图（管理后台使用）
      * @return 轮播图列表
      */
