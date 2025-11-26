@@ -2,7 +2,9 @@ package com.zmh.exam.service.impl;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zmh.exam.entity.Category;
+import com.zmh.exam.entity.Question;
 import com.zmh.exam.mapper.CategoryMapper;
 import com.zmh.exam.mapper.QuestionMapper;
 import com.zmh.exam.service.CategoryService;
@@ -19,7 +21,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CategoryServiceImpl implements CategoryService {
+public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
     private final CategoryMapper categoryMapper;
     private final QuestionMapper questionMapper;
 
@@ -99,5 +101,60 @@ public class CategoryServiceImpl implements CategoryService {
         log.info("查询类别树状结构集合：{}",categoryTree);
 
         return categoryTree;
+    }
+
+    @Override
+    public void saveCategory(Category category) {
+        //判断当前父类下面是否有重复的名字
+        long count = count(new LambdaQueryWrapper<Category>()
+                .eq(Category::getParentId, category.getParentId())
+                .eq(Category::getName, category.getName()));
+        if (count > 0) {
+            Category parent = getById(category.getParentId());
+            //不能添加，同一个父类下名称重复了
+            throw new RuntimeException("在%s父分类下，已经存在名为：%s的子分类，本次保存失败！"
+                    .formatted(parent.getName(),category.getName()));
+        }else  {
+            save(category);
+            log.info("添加成功");
+        }
+
+    }
+
+    @Override
+    public void updateCategory(Category category) {
+
+        //判断当前父类下面是否有重复的名字,并排除修改本身的数据
+        boolean exists = exists(new LambdaQueryWrapper<Category>()
+                .eq(Category::getParentId, category.getParentId())
+                .ne(Category::getId, category.getId())
+                .eq(Category::getName, category.getName()));
+        if (exists) {
+            Category parent = getById(category.getParentId());
+            //不能添加，同一个父类下名称重复了
+            throw new RuntimeException("在%s父分类下，已经存在名为：%s的子分类，本次更新失败！"
+                    .formatted(parent.getName(),category.getName()));
+        }else {
+            updateById(category);
+        }
+
+    }
+
+    @Override
+    public void removeCategory(Long id) {
+        //检查是否是一级父题目,即parent_id=0
+        if(getById(id).getParentId() ==0){
+            throw new RuntimeException("不能删除一级父题目");
+        }
+
+        //检查该分类下是否有题目
+
+        boolean exists = questionMapper.exists(new LambdaQueryWrapper<Question>()
+                .eq(Question::getCategoryId, id));
+        if (exists) {
+            throw new RuntimeException("该分类下还有题目,不能删除");
+        }
+
+        removeById(id);
     }
 }
