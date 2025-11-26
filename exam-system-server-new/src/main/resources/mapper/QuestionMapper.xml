@@ -9,6 +9,7 @@
             category_id AS categoryId,
             COUNT(*) AS cnt
         FROM questions
+        WHERE is_deleted = 0
         GROUP BY category_id
     </select>
 </mapper>
