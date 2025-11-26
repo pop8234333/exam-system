@@ -3,4 +3,12 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zmh.exam.mapper.QuestionMapper">
+    <!-- 按分类统计题目数量 -->
+    <select id="countByCategory" resultType="map">
+        SELECT
+            category_id AS categoryId,
+            COUNT(*) AS cnt
+        FROM questions
+        GROUP BY category_id
+    </select>
 </mapper>
