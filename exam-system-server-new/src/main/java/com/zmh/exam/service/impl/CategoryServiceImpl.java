@@ -66,7 +66,6 @@ public class CategoryServiceImpl implements CategoryService {
             stream()：把 List<Category> 转成 Stream 流，开启流式操作。
             Collectors.groupingBy：按指定规则分组，这里用方法引用 Category::getParentId ，提取分类的 parentId 作为分组 key，value 是对应 parentId 的分类列表，快速构建 父 ID - 子分类列表 映射。
          */
-
         // 3. 遍历所有分类，为它们设置children属性，并递归地累加题目数量
         categories.forEach(category -> {
             // 从Map中找到当前分类的所有子分类,根据父类分类id找到对应的所有子分类列表
@@ -94,8 +93,11 @@ public class CategoryServiceImpl implements CategoryService {
             filter：按条件（parentId == 0 ）过滤分类，只保留顶级分类。
             collect(Collectors.toList())：把过滤后的 Stream 流转为 List ，作为分类树的根节点集合返回。
          */
-        return categories.stream()
+        List<Category> categoryTree=categories.stream()
                 .filter(c -> c.getParentId() == 0)
                 .collect(Collectors.toList());
+        log.info("查询类别树状结构集合：{}",categoryTree);
+
+        return categoryTree;
     }
 }
