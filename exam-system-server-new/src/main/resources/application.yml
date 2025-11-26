@@ -29,7 +29,9 @@ spring:
 #用于打印框架生成的sql语句，便于调试
 mybatis-plus:
   configuration:
+    auto-mapping-behavior: full #开启嵌套自动映射
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true #驼峰命名自动映射
 
   global-config:
     db-config:
@@ -43,3 +45,6 @@ minio:
   access-key: minioadmin
   secret-key: minioadmin
   bucket-name: exam-system
+#swagger配置
+springdoc:
+  default-flat-param-object: true
