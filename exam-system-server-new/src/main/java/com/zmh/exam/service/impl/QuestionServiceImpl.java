@@ -51,66 +51,63 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 .list(pageBean);
         //目前的list中还没有题目答案和题目选项列表和题目所属分类信息
         //拿到list中的id列表,然后再根据id列表查询对应的信息再赋值
-        if (!list.isEmpty()) {
-            List<Long> idList = list.stream().map(Question::getId).toList();
-            List<Long> categoryIdList = list.stream().map(Question::getCategoryId).filter(Objects::nonNull).toList();
-
-            // 1. 查询答题记录列表 -> List<QuestionAnswer>
-            List<QuestionAnswer> answerList = questionAnswerMapper.selectList(
-                    new LambdaQueryWrapper<QuestionAnswer>()
-                            .in(QuestionAnswer::getQuestionId, idList)
-            );
-
-            // 转成 Map<Long, List<QuestionAnswer>>   key = questionId
-            Map<Long, QuestionAnswer> answerMap = answerList.stream()
-                    .collect(Collectors.toMap(QuestionAnswer::getQuestionId, Function.identity()));
-
-
-            // 2. 查询选项列表 -> List<QuestionChoice>
-            List<QuestionChoice> choiceList = questionChoiceMapper.selectList(
-                    new LambdaQueryWrapper<QuestionChoice>()
-                            .in(QuestionChoice::getQuestionId, idList)
-                            .orderByAsc(QuestionChoice::getSort)
-            );
-
-            // 转成 Map<Long, QuestionChoice>   key = questionId
-            Map<Long, List<QuestionChoice>> choiceMap = choiceList.stream()
-                    .collect(Collectors.groupingBy(QuestionChoice::getQuestionId));
-            //3.查询题目所属分类信息列表
-            List<Category> categoryList = categoryMapper.selectList(new LambdaQueryWrapper<Category>()
-                    .in(Category::getId, categoryIdList));
-            categoryService.fillQuestionCount(categoryList);
-            categoryService.buildTree(categoryList);
-
-            Map<Long, Category> categoryMap = categoryList.stream().collect(Collectors.toMap(Category::getId, Function.identity()));
-
-
-            // 将查询到的信息设置到对应的Question对象中
-            for (Question question : list) {
-                // 设置答案信息
-                QuestionAnswer answers = answerMap.getOrDefault(question.getId(), new QuestionAnswer());
-                if (!(answers == null)) {
-                    question.setAnswer(answers); // 一个题目只有一个答案
-                }
-
-                // 设置选项信息
-                question.setChoices(choiceMap.getOrDefault(question.getId(), new ArrayList<>()));
-
-                // 设置分类信息
-                if (question.getCategoryId() != null) {
-                    question.setCategory(categoryMap.get(question.getCategoryId()));
-                }
-            }
-            log.info("list:{}", list);
-
-
-        }
+        enrichQuestions(list);
 
 
         return pageBean.setRecords(list);
     }
 
 
+    /* 批量查询并回填答案、选项、分类信息 */
+    private void enrichQuestions(List<Question> questions) {
+        //拿到list中的id列表,然后再根据id列表查询对应的信息再赋值
+        if (questions == null || questions.isEmpty()) {
+            return;
+        }
+
+        List<Long> questionIds = questions.stream().map(Question::getId).toList();
+        List<Long> categoryIds = questions.stream()
+                .map(Question::getCategoryId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // 1) 答案
+        Map<Long, QuestionAnswer> answerMap = questionAnswerMapper.selectList(
+                        new LambdaQueryWrapper<QuestionAnswer>().in(QuestionAnswer::getQuestionId, questionIds))
+                .stream()
+                .collect(Collectors.toMap(QuestionAnswer::getQuestionId, Function.identity(), (a, b) -> a));
+
+        // 2) 选项
+        Map<Long, List<QuestionChoice>> choiceMap = questionChoiceMapper.selectList(
+                        new LambdaQueryWrapper<QuestionChoice>()
+                                .in(QuestionChoice::getQuestionId, questionIds)
+                                .orderByAsc(QuestionChoice::getSort))
+                .stream()
+                .collect(Collectors.groupingBy(QuestionChoice::getQuestionId));
+
+        // 3) 分类
+        Map<Long, Category> categoryMap = categoryIds.isEmpty()
+                ? Map.of()
+                : categoryMapper.selectList(new LambdaQueryWrapper<Category>().in(Category::getId, categoryIds))
+                .stream()
+                .collect(Collectors.toMap(Category::getId, Function.identity()));
+
+        // 4) 回填,将查询到的信息设置到对应的Question对象中
+        questions.forEach(q -> {
+            // 设置答案信息
+            QuestionAnswer answer = answerMap.get(q.getId());
+            if (answer != null) {
+                q.setAnswer(answer);
+            }
+            // 设置选项信息
+            q.setChoices(choiceMap.getOrDefault(q.getId(), new ArrayList<>()));
+            // 设置分类信息
+            if (q.getCategoryId() != null) {
+                q.setCategory(categoryMap.get(q.getCategoryId()));
+            }
+        });
+    }
 
 
 
