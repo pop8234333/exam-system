@@ -1,11 +1,15 @@
 package com.zmh.exam.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.zmh.exam.common.Result;
 import com.zmh.exam.entity.Question;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zmh.exam.service.QuestionService;
+import com.zmh.exam.vo.QuestionQueryVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,8 +42,12 @@ import java.util.stream.Collectors;
 @RestController  // @Controller + @ResponseBody，表示这是一个REST控制器，返回JSON数据
 @RequestMapping("/api/questions")  // 设置基础URL路径，所有方法的URL都以此开头
 @CrossOrigin(origins = "*")  // 允许跨域访问，解决前后端分离开发中的跨域问题
+@RequiredArgsConstructor
 @Tag(name = "题目管理", description = "题目相关的增删改查操作，包括分页查询、随机获取、热门推荐等功能")  // Swagger标签，用于分组显示API
 public class QuestionController {
+
+
+    private final QuestionService questionService;
     
     /**
      * 分页查询题目列表（支持多条件筛选）
@@ -68,12 +76,16 @@ public class QuestionController {
     public Result<Page<Question>> getQuestionList(
             @Parameter(description = "当前页码，从1开始", example = "1") @RequestParam(defaultValue = "1") Integer page,  // 参数描述
             @Parameter(description = "每页显示数量", example = "10") @RequestParam(defaultValue = "10") Integer size,
-            @Parameter(description = "分类ID筛选条件") @RequestParam(required = false) Long categoryId,
+            QuestionQueryVo questionQueryVo
+/*          @Parameter(description = "分类ID筛选条件") @RequestParam(required = false) Long categoryId,
             @Parameter(description = "难度筛选条件，可选值：EASY/MEDIUM/HARD") @RequestParam(required = false) String difficulty,
             @Parameter(description = "题型筛选条件，可选值：CHOICE/JUDGE/TEXT") @RequestParam(required = false) String type,
-            @Parameter(description = "关键词搜索，对题目标题进行模糊查询") @RequestParam(required = false) String keyword) {
+            @Parameter(description = "关键词搜索，对题目标题进行模糊查询") @RequestParam(required = false) String keyword*/) {
+        Page<Question> pageBean = new Page<>(page, size);
+        Page<Question> questionPage  = questionService.getPage(pageBean,questionQueryVo);
+
         // 返回统一格式的成功响应
-        return Result.success(null);
+        return Result.success(questionPage);
     }
     
     /**
