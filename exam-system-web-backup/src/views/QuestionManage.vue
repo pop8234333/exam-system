@@ -302,8 +302,8 @@
         <template v-if="questionForm.type === 'JUDGE'">
           <el-form-item label="正确答案" prop="answer.answer">
             <el-radio-group v-model="questionForm.answer.answer">
-              <el-radio label="TRUE">正确</el-radio>
-              <el-radio label="FALSE">错误</el-radio>
+              <el-radio label="true">正确</el-radio>
+              <el-radio label="false">错误</el-radio>
             </el-radio-group>
           </el-form-item>
         </template>

@@ -60,47 +60,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     public List<Category> getCategoryTree() {
         List<Category> categories = getAllCategories();//1.获取包含题目数量的分类信息
 
-        // 2. 使用Stream API按parentId进行分组，得到 Map<parentId, List<children>>
-        Map<Long, List<Category>> childrenMap = categories.stream()
-                .collect(Collectors.groupingBy(Category::getParentId));
-
-        /*
-            stream()：把 List<Category> 转成 Stream 流，开启流式操作。
-            Collectors.groupingBy：按指定规则分组，这里用方法引用 Category::getParentId ，提取分类的 parentId 作为分组 key，value 是对应 parentId 的分类列表，快速构建 父 ID - 子分类列表 映射。
-         */
-        // 3. 遍历所有分类，为它们设置children属性，并递归地累加题目数量
-        categories.forEach(category -> {
-            // 从Map中找到当前分类的所有子分类,根据父类分类id找到对应的所有子分类列表
-            List<Category> children = childrenMap.getOrDefault(category.getId(), new ArrayList<>());
-            //将找到的子分类列表赋值给当前分类
-            category.setChildren(children);
-
-            // 汇总子分类的题目数量到父分类
-            long childrenQuestionCount = children.stream()
-                    .mapToLong(c -> c.getCount() != null ? c.getCount() : 0L)
-                    .sum();
-            /*
-                forEach：遍历每个分类，对单个分类做处理，类似增强 for 循环，但结合 Stream 更灵活。
-                getOrDefault：从分组好的 childrenMap 取当前分类的子分类，无对应值时给默认空列表，避免空指针。
-                嵌套 stream().mapToLong().sum()：先转成 LongStream ，通过 mapToLong 处理 count （空值转 0 ），再用 sum 汇总子分类题目数，结合自身题目数，设置到当前分类，完成递归汇总逻辑。
-             */
-
-            long selfQuestionCount = category.getCount() != null ? category.getCount() : 0L;
-            // 父分类的总数 = 自身的题目数 + 所有子分类的题目数总和
-            category.setCount(selfQuestionCount + childrenQuestionCount);
-        });
-
-        // 4. 最后，筛选出所有顶级分类（parentId为0），它们是树的根节点
-        /*
-            filter：按条件（parentId == 0 ）过滤分类，只保留顶级分类。
-            collect(Collectors.toList())：把过滤后的 Stream 流转为 List ，作为分类树的根节点集合返回。
-         */
-        List<Category> categoryTree=categories.stream()
-                .filter(c -> c.getParentId() == 0)
-                .collect(Collectors.toList());
-        log.info("查询类别树状结构集合：{}",categoryTree);
-
-        return categoryTree;
+        // 3. 构建树形结构并返回
+        List<Category> buildTree = buildTree(categories);
+        log.info("查询类别树状结构集合：{}",buildTree);
+        return buildTree;
     }
 
     @Override
@@ -156,5 +119,64 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         }
 
         removeById(id);
+    }
+
+
+    // 这是一个私有的辅助方法，用于填充题目数
+    public void fillQuestionCount(List<Category> categoryList) {
+        //第一步得到的是{<categoryId,1>,<cnt,1>}List<Map>
+        Map<Long, Long> countMap = questionMapper.countByCategory()
+                .stream()
+                .collect(Collectors.toMap(
+                        m -> m.get("categoryId"),
+                        m -> m.get("cnt")
+                ));
+
+        // 3) 回填数量字段，没题目的分类默认 0
+        categoryList.forEach(c -> c.setCount(countMap.getOrDefault(c.getId(), 0L)));
+
+    }
+
+
+    // 构建树形结构的私有辅助方法
+    public List<Category> buildTree(List<Category> categories) {
+        // 1. 使用Stream API按parentId进行分组，得到 Map<parentId, List<children>>
+        Map<Long, List<Category>> childrenMap = categories.stream()
+                .collect(Collectors.groupingBy(Category::getParentId));
+
+        /*
+            stream()：把 List<Category> 转成 Stream 流，开启流式操作。
+            Collectors.groupingBy：按指定规则分组，这里用方法引用 Category::getParentId ，提取分类的 parentId 作为分组 key，value 是对应 parentId 的分类列表，快速构建 父 ID - 子分类列表 映射。
+         */
+
+        // 2. 遍历所有分类，为它们设置children属性，并递归地累加题目数量
+        categories.forEach(category -> {
+            // 从Map中找到当前分类的所有子分类
+            List<Category> children = childrenMap.getOrDefault(category.getId(), new ArrayList<>());
+            category.setChildren(children);
+
+            // 汇总子分类的题目数量到父分类
+            long childrenQuestionCount = children.stream()
+                    .mapToLong(c -> c.getCount() != null ? c.getCount() : 0L)
+                    .sum();
+            /*
+                forEach：遍历每个分类，对单个分类做处理，类似增强 for 循环，但结合 Stream 更灵活。
+                getOrDefault：从分组好的 childrenMap 取当前分类的子分类，无对应值时给默认空列表，避免空指针。
+                嵌套 stream().mapToLong().sum()：先转成 LongStream ，通过 mapToLong 处理 count （空值转 0 ），再用 sum 汇总子分类题目数，结合自身题目数，设置到当前分类，完成递归汇总逻辑。
+             */
+
+            long selfQuestionCount = category.getCount() != null ? category.getCount() : 0L;
+            // 父分类的总数 = 自身的题目数 + 所有子分类的题目数总和
+            category.setCount(selfQuestionCount + childrenQuestionCount);
+        });
+
+        // 3. 最后，筛选出所有顶级分类（parentId为0），它们是树的根节点
+        /*
+            filter：按条件（parentId == 0 ）过滤分类，只保留顶级分类。
+            collect(Collectors.toList())：把过滤后的 Stream 流转为 List ，作为分类树的根节点集合返回。
+         */
+        return categories.stream()
+                .filter(c -> c.getParentId() == 0)
+                .collect(Collectors.toList());
     }
 }
