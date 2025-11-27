@@ -105,10 +105,9 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
 
 
         }
-        Page<Question> pageResult = pageBean.setRecords(list);
 
 
-        return pageResult;
+        return pageBean.setRecords(list);
     }
 
 
