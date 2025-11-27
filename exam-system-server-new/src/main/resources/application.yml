@@ -6,7 +6,13 @@ spring:
 
   application:
     name: exam-system-server-new
-
+#redis配置
+  data:
+    redis:
+      host: 192.168.10.101
+      port: 6379
+      database: 2
+#MySQL关系型数据库配置
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     url: jdbc:mysql://192.168.10.101:3306/exam_system_new?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2b8
