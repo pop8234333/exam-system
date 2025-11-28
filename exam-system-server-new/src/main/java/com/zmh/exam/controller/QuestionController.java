@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/questions")  // 设置基础URL路径，所有方法的URL都以此开头
 @CrossOrigin(origins = "*")  // 允许跨域访问，解决前后端分离开发中的跨域问题
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "题目管理", description = "题目相关的增删改查操作，包括分页查询、随机获取、热门推荐等功能")  // Swagger标签，用于分组显示API
 public class QuestionController {
 
@@ -84,18 +86,20 @@ public class QuestionController {
         Page<Question> pageBean = new Page<>(page, size);
         Page<Question> questionPage  = questionService.getPage(pageBean,questionQueryVo);
 
+        log.info("查询结果为:{}",questionPage);
+
         // 返回统一格式的成功响应
         return Result.success(questionPage);
     }
-    
+
     /**
      * 根据ID查询单个题目详情
-     * 
+     *
      * RESTful API教学：
      * - URL模式：GET /api/questions/{id}
      * - 路径参数：通过@PathVariable获取URL中的参数
      * - 语义化：URL直观表达资源和操作
-     * 
+     *
      * @param id 题目主键ID，通过URL路径传递
      * @return 题目详细信息，包含选项和答案
      */
@@ -103,8 +107,9 @@ public class QuestionController {
     @Operation(summary = "根据ID查询题目详情", description = "获取指定ID的题目完整信息，包括题目内容、选项、答案等详细数据")  // API描述
     public Result<Question> getQuestionById(
             @Parameter(description = "题目ID", example = "1") @PathVariable Long id) {
-
-        return Result.success(null);
+        Question question =  questionService.customDetailQuestion(id);
+        log.info("查询题目详情调用成功！ 返回数据为：{}",question);
+        return Result.success(question);
     }
     
     /**

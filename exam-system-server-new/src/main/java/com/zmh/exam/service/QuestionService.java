@@ -34,4 +34,6 @@ public interface QuestionService extends IService<Question> {
 
 
     Page<Question> getPage(Page<Question> pageBean, QuestionQueryVo questionQueryVo);
+
+    Question customDetailQuestion(Long id);
 }

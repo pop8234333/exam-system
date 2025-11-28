@@ -3,6 +3,7 @@ package com.zmh.exam.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zmh.exam.common.CacheConstants;
 import com.zmh.exam.entity.*;
 import com.zmh.exam.mapper.CategoryMapper;
 import com.zmh.exam.mapper.QuestionAnswerMapper;
@@ -11,6 +12,7 @@ import com.zmh.exam.mapper.QuestionMapper;
 import com.zmh.exam.service.CategoryService;
 import com.zmh.exam.service.QuestionService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zmh.exam.utils.RedisUtils;
 import com.zmh.exam.vo.QuestionQueryVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     private final QuestionAnswerMapper questionAnswerMapper;
     private final QuestionChoiceMapper questionChoiceMapper;
     private final CategoryService categoryService;
+    private final RedisUtils redisUtils;
 
 
     @Override
@@ -55,6 +58,49 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
 
 
         return pageBean.setRecords(list);
+    }
+
+    @Override
+    public Question customDetailQuestion(Long id) {
+        // 1) 查题目本身
+        Question question = getById(id);
+        if (question == null){
+            throw  new RuntimeException("题目查询详情失败！原因可能提前被删除！题目id为：" + id);
+        }
+
+        // 2) 答案（一题一答，重复时取第一条）
+        QuestionAnswer answer = questionAnswerMapper.selectOne(
+                new LambdaQueryWrapper<QuestionAnswer>()
+                        .eq(QuestionAnswer::getQuestionId, id)
+                        .last("limit 1"));
+        if (answer != null) {
+            question.setAnswer(answer);
+        }
+
+        // 3) 选项（按 sort 升序）
+        List<QuestionChoice> choices = questionChoiceMapper.selectList(
+                new LambdaQueryWrapper<QuestionChoice>()
+                        .eq(QuestionChoice::getQuestionId, id)
+                        .orderByAsc(QuestionChoice::getSort));
+        question.setChoices(choices);
+
+        // 4) 分类信息
+        if (question.getCategoryId() != null) {
+            Category category = categoryMapper.selectById(question.getCategoryId());
+            question.setCategory(category);
+        }
+        //2.进行热点题目缓存
+        new Thread(() -> {
+            incrementQuestion(question.getId());
+        }).start();
+        return question;
+    }
+
+    //定义进行题目访问次数增长的方法
+    //异步方法
+    private void incrementQuestion(Long questionId){
+        Double score = redisUtils.zIncrementScore(CacheConstants.POPULAR_QUESTIONS_KEY,questionId,1);
+        log.info("完成{}题目分数累计，累计后分数为：{}",questionId,score);
     }
 
 
