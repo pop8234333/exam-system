@@ -1,6 +1,5 @@
 package com.zmh.exam.controller;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.zmh.exam.common.Result;
 import com.zmh.exam.entity.Question;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -11,14 +10,9 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 题目控制器 - 处理题目相关的HTTP请求
@@ -67,10 +61,7 @@ public class QuestionController {
      * 
      * @param page 当前页码，从1开始，默认第1页
      * @param size 每页显示数量，默认10条
-     * @param categoryId 分类ID筛选条件，可选
-     * @param difficulty 难度筛选条件（EASY/MEDIUM/HARD），可选
-     * @param type 题型筛选条件（CHOICE/JUDGE/TEXT），可选
-     * @param keyword 关键词搜索，对题目标题进行模糊查询，可选
+     * @param questionQueryVo 查询条件封装对象
      * @return 封装的分页查询结果，包含题目列表和分页信息
      */
     @GetMapping("/list")  // 映射GET请求到/api/questions/list
@@ -175,8 +166,9 @@ public class QuestionController {
     @Operation(summary = "删除题目", description = "根据ID删除指定的题目，包括关联的选项和答案数据")  // API描述
     public Result<String> deleteQuestion(
             @Parameter(description = "题目ID") @PathVariable Long id) {
+        boolean success = questionService.customDeleteQuestion(id);
         // 根据操作结果返回不同的响应
-        if (true) {
+        if (success) {
             return Result.success("题目删除成功");
         } else {
             return Result.error("题目删除失败");

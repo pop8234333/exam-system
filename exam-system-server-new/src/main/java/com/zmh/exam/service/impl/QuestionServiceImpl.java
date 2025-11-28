@@ -1,16 +1,10 @@
 package com.zmh.exam.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zmh.exam.common.CacheConstants;
 import com.zmh.exam.entity.*;
-import com.zmh.exam.mapper.CategoryMapper;
-import com.zmh.exam.mapper.QuestionAnswerMapper;
-import com.zmh.exam.mapper.QuestionChoiceMapper;
-import com.zmh.exam.mapper.QuestionMapper;
-import com.zmh.exam.service.CategoryService;
+import com.zmh.exam.mapper.*;
 import com.zmh.exam.service.QuestionService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zmh.exam.utils.RedisUtils;
@@ -36,12 +30,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> implements QuestionService {
 
-    private final QuestionMapper questionMapper;
     private final CategoryMapper categoryMapper;
     private final QuestionAnswerMapper questionAnswerMapper;
     private final QuestionChoiceMapper questionChoiceMapper;
-    private final CategoryService categoryService;
     private final RedisUtils redisUtils;
+    private final PaperQuestionMapper paperQuestionMapper;
 
 
     @Override
@@ -57,7 +50,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
 
         //目前的list中还没有题目答案和题目选项列表和题目所属分类信息
         //拿到list中的id列表,然后再根据id列表查询对应的信息再赋值
-        enrichQuestions(page);
+        enrichQuestions(page.getRecords());
 
 
         return page;
@@ -71,31 +64,10 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
             throw  new RuntimeException("题目查询详情失败！原因可能提前被删除！题目id为：" + id);
         }
 
-        // 2) 答案（一题一答，重复时取第一条）
-        QuestionAnswer answer = questionAnswerMapper.selectOne(
-                new LambdaQueryWrapper<QuestionAnswer>()
-                        .eq(QuestionAnswer::getQuestionId, id)
-                        .last("limit 1"));
-        if (answer != null) {
-            question.setAnswer(answer);
-        }
-
-        // 3) 选项（按 sort 升序）
-        List<QuestionChoice> choices = questionChoiceMapper.selectList(
-                new LambdaQueryWrapper<QuestionChoice>()
-                        .eq(QuestionChoice::getQuestionId, id)
-                        .orderByAsc(QuestionChoice::getSort));
-        question.setChoices(choices);
-
-        // 4) 分类信息
-        if (question.getCategoryId() != null) {
-            Category category = categoryMapper.selectById(question.getCategoryId());
-            question.setCategory(category);
-        }
+        // 2) 统一使用批量填充方法，避免逐条查导致的潜在 N+1 问题
+        enrichQuestions(List.of(question));
         //2.进行热点题目缓存
-        new Thread(() -> {
-            incrementQuestion(question.getId());
-        }).start();
+        new Thread(() -> incrementQuestion(question.getId())).start();
         return question;
     }
     /**
@@ -105,61 +77,49 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void customSaveQuestion(Question question) {
-        // 0) 入参兜底，避免出现 NPE
+        // 0) 保护性校验与类型解析，借助枚举保证类型合法性
         if (question == null) {
             throw new IllegalArgumentException("题目信息不能为空");
         }
+        QuestionType typeEnum = resolveType(question.getType());
+        // 持久化前统一类型格式，避免大小写导致的判重/查询问题
+        question.setType(typeEnum.name());
 
-        // 1) 校验“同类型 + 同标题”是否已存在，依赖逻辑删除字段自动过滤已删除数据
+        // 1) 校验“同类型 + 同标题”唯一
         boolean exists = lambdaQuery()
-                .eq(Question::getType, question.getType())
+                .eq(Question::getType, typeEnum.name())
                 .eq(Question::getTitle, question.getTitle())
                 .exists();
         if (exists) {
             throw new RuntimeException("同类型下已存在相同标题的题目，保存失败：" + question.getTitle());
         }
 
-        // 2) 先保存题目主体，获取自增的题目 ID，后续子表要用到
+        // 2) 先落库题目主体，拿到自增ID
         boolean saved = save(question);
         if (!saved || question.getId() == null) {
             throw new RuntimeException("题目主体保存失败，无法继续保存选项与答案");
         }
 
-        // 3) 准备答案对象（非选择题直接使用传入答案；选择题稍后根据正确选项生成）
+        // 3) 组装答案对象（选择题稍后由选项生成）
         QuestionAnswer answer = question.getAnswer() == null ? new QuestionAnswer() : question.getAnswer();
         answer.setQuestionId(question.getId());
+        // 新增时忽略前端传入的答案ID，避免误更新旧记录
+        answer.setId(null);
 
-        // 4) 如果是选择题：逐条落库选项，并动态拼接标准答案（A/B/C... 多选用逗号分隔）
-        if ("CHOICE".equals(question.getType())) {
-            List<QuestionChoice> choices = question.getChoices();
-            if (choices == null || choices.isEmpty()) {
-                throw new RuntimeException("选择题至少需要配置一个选项");
+        // 4) 各题型分支处理
+        if (typeEnum == QuestionType.CHOICE) {
+            handleChoiceForSave(question, answer);
+        } else {
+            // 非选择题必须有答案；判断题统一大写 TRUE/FALSE
+            if (answer.getAnswer() == null || answer.getAnswer().trim().isEmpty()) {
+                throw new RuntimeException("非选择题必须填写答案");
             }
-
-            StringBuilder correctAnswer = new StringBuilder();
-            for (int i = 0; i < choices.size(); i++) {
-                QuestionChoice choice = choices.get(i);
-                // 若前端未指定排序，默认用当前下标（从 0 开始）确保选项顺序固定
-                int sort = choice.getSort() == null ? i : choice.getSort();
-                choice.setSort(sort);
-                choice.setQuestionId(question.getId());
-                questionChoiceMapper.insert(choice);
-
-                // 根据正确选项生成答案字母（0->A，1->B...），多选用英文逗号拼接
-                if (Boolean.TRUE.equals(choice.getIsCorrect())) {
-                    if (!correctAnswer.isEmpty()) {
-                        correctAnswer.append(",");
-                    }
-                    correctAnswer.append((char) ('A' + sort));
-                }
+            if (typeEnum == QuestionType.JUDGE) {
+                answer.setAnswer(answer.getAnswer().toLowerCase());
             }
-            answer.setAnswer(correctAnswer.toString());
-        } else if ("JUDGE".equals(question.getType()) && answer.getAnswer() != null) {
-            // 判断题统一小写 true/false，避免大小写导致的判题问题
-            answer.setAnswer(answer.getAnswer().toLowerCase());
         }
 
-        // 5) 题目答案入库（选择题已在上面生成，其他题型直接使用原答案）
+        // 5) 答案落库
         questionAnswerMapper.insert(answer);
     }
     /**
@@ -167,51 +127,49 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
      * @param question
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void customUpdateQuestion(Question question) {
 
-        //检验同类型+标题唯一(排除自己)
+        // 0) 保护性校验与类型解析
+        if (question == null || question.getId() == null) {
+            throw new IllegalArgumentException("题目或题目ID不能为空");
+        }
+        QuestionType typeEnum = resolveType(question.getType());
+        // 更新时同样规范化类型存储
+        question.setType(typeEnum.name());
+
+        // 1) 检验同类型+标题唯一(排除自己)
         boolean exists = lambdaQuery()
-                .eq(Question::getType, question.getType())
+                .eq(Question::getType, typeEnum.name())
                 .eq(Question::getTitle, question.getTitle())
                 .ne(Question::getId, question.getId())
                 .exists();
         if (exists) {
             throw new RuntimeException("同类型下已存在相同标题的题目,修改失败:"+question.getTitle());
         }
-        //更新题目主题
+        // 2) 更新题目主体
         boolean updated = updateById(question);
         if (!updated || question.getId() == null) {
             throw new RuntimeException("题目更新失败:"+question.getId());
         }
+        // 3) 准备答案
         QuestionAnswer answer = question.getAnswer() == null ? new QuestionAnswer() : question.getAnswer();
         answer.setQuestionId(question.getId());
 
         // 4) 选择题：先删旧选项再插入新选项，并重算正确答案
-        if ("CHOICE".equals(question.getType())) {
+        if (typeEnum == QuestionType.CHOICE) {
             questionChoiceMapper.delete(new LambdaQueryWrapper<QuestionChoice>()
                     .eq(QuestionChoice::getQuestionId, question.getId()));
-
-            List<QuestionChoice> choices = question.getChoices();
-            if (choices == null || choices.isEmpty()) {
-                throw new RuntimeException("选择题至少需要配置一个选项");
+            handleChoiceForSave(question, answer);
+        } else if (typeEnum == QuestionType.JUDGE) {
+            if (answer.getAnswer() == null || answer.getAnswer().trim().isEmpty()) {
+                throw new RuntimeException("非选择题必须填写答案");
             }
-
-            StringBuilder correctAnswer = new StringBuilder();
-            for (int i = 0; i < choices.size(); i++) {
-                QuestionChoice choice = choices.get(i);
-                int sort = choice.getSort() == null ? i : choice.getSort();
-                choice.setId(null); //避免主键冲突
-                choice.setQuestionId(question.getId());
-                choice.setSort(sort);
-                questionChoiceMapper.insert(choice);
-                if (Boolean.TRUE.equals(choice.getIsCorrect())) {
-                    if (!correctAnswer.isEmpty()) correctAnswer.append(",");
-                    correctAnswer.append((char) ('A' + sort));
-                }
-            }
-            answer.setAnswer(correctAnswer.toString());
-        }else  if ("JUDGE".equals(question.getType()) && answer.getAnswer() != null) {
             answer.setAnswer(answer.getAnswer().toLowerCase());
+        } else {
+            if (answer.getAnswer() == null || answer.getAnswer().trim().isEmpty()) {
+                throw new RuntimeException("非选择题必须填写答案");
+            }
         }
 
         // 5) 更新答案（已存在则 updateById，否则 insert）
@@ -223,6 +181,30 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
 
     }
 
+    @Override
+    public boolean customDeleteQuestion(Long id) {
+        // 四、题目删除
+        boolean success = true;
+        // 关键点1:先检查当前题目是否被试卷引用,未被引用的题目才可以删除
+        boolean exists= paperQuestionMapper.exists(new LambdaQueryWrapper<PaperQuestion>().eq(PaperQuestion::getQuestionId, id));
+
+        if (exists) {
+            throw new RuntimeException("当前题目被被试卷引用");
+        }
+        //下面就开始进行删除逻辑
+        //删除必须先删除与题目表相关联的附属数据:比如题目答案表数据,题目选项表数据!!!!
+        //题目答案数据表一定有,必删除
+        questionAnswerMapper.delete(new LambdaQueryWrapper<QuestionAnswer>().eq(QuestionAnswer::getQuestionId, id));
+        //判断改题目是否为选择题
+
+
+        // 关键点2:先删除关联数据,再删除题目本身
+        //        答案(一定有)(逻辑删除)
+        //        选项(选择题有)(逻辑删除)
+        // 关键点3:使用逻辑删除
+        return true;
+    }
+
     //定义进行题目访问次数增长的方法
     //异步方法
     private void incrementQuestion(Long questionId){
@@ -232,8 +214,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
 
 
     /* 批量查询并回填答案、选项、分类信息 */
-    private void enrichQuestions(Page<Question> page) {
-        List<Question> questions = page.getRecords();
+    private void enrichQuestions(List<Question> questions) {
         //拿到list中的id列表,然后再根据id列表查询对应的信息再赋值
         if (questions == null || questions.isEmpty()) {
             return;
@@ -246,13 +227,13 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 .distinct()
                 .toList();
 
-        // 1) 答案
+        // 1) 答案：一次性批量查询，避免 N+1
         Map<Long, QuestionAnswer> answerMap = questionAnswerMapper.selectList(
                         new LambdaQueryWrapper<QuestionAnswer>().in(QuestionAnswer::getQuestionId, questionIds))
                 .stream()
                 .collect(Collectors.toMap(QuestionAnswer::getQuestionId, Function.identity(), (a, b) -> a));
 
-        // 2) 选项
+        // 2) 选项：一次性批量查询，按题目分组
         Map<Long, List<QuestionChoice>> choiceMap = questionChoiceMapper.selectList(
                         new LambdaQueryWrapper<QuestionChoice>()
                                 .in(QuestionChoice::getQuestionId, questionIds)
@@ -260,27 +241,85 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 .stream()
                 .collect(Collectors.groupingBy(QuestionChoice::getQuestionId));
 
-        // 3) 分类
+        // 3) 分类：批量查询后映射
         Map<Long, Category> categoryMap = categoryIds.isEmpty()
                 ? Map.of()
                 : categoryMapper.selectList(new LambdaQueryWrapper<Category>().in(Category::getId, categoryIds))
                 .stream()
                 .collect(Collectors.toMap(Category::getId, Function.identity()));
 
-        // 4) 回填,将查询到的信息设置到对应的Question对象中
+        // 4) 回填
         questions.forEach(q -> {
-            // 设置答案信息
             QuestionAnswer answer = answerMap.get(q.getId());
             if (answer != null) {
                 q.setAnswer(answer);
             }
-            // 设置选项信息
             q.setChoices(choiceMap.getOrDefault(q.getId(), new ArrayList<>()));
-            // 设置分类信息
             if (q.getCategoryId() != null) {
                 q.setCategory(categoryMap.get(q.getCategoryId()));
             }
         });
+    }
+
+    /**
+     * 解析并校验题目类型，使用枚举保证合法性
+     */
+    private QuestionType resolveType(String type) {
+        QuestionType questionType = QuestionType.fromString(type);
+        if (questionType == null) {
+            throw new RuntimeException("不支持的题目类型：" + type);
+        }
+        return questionType;
+    }
+
+    /**
+     * 选择题保存/更新统一处理
+     * 1. 校验选项列表非空且每个内容非空
+     * 2. 多选题正确选项数 >=2，单选题正确选项数 =1
+     * 3. 依据 sort/下标生成标准答案字母串（A/B/C...），多选使用英文逗号拼接
+     */
+    private void handleChoiceForSave(Question question, QuestionAnswer answer) {
+        List<QuestionChoice> choices = question.getChoices();
+        if (choices == null || choices.isEmpty()) {
+            throw new RuntimeException("选择题至少需要配置一个选项");
+        }
+
+        int correctCount = 0;
+        StringBuilder correctAnswer = new StringBuilder();
+        for (int i = 0; i < choices.size(); i++) {
+            QuestionChoice choice = choices.get(i);
+            String content = choice.getContent() == null ? "" : choice.getContent().trim();
+            if (content.isEmpty()) {
+                throw new RuntimeException("选择题选项内容不能为空");
+            }
+            // 如果前端未传排序，则按照当前下标保证顺序稳定
+            int sort = choice.getSort() == null ? i : choice.getSort();
+            choice.setSort(sort);
+            choice.setQuestionId(question.getId());
+            // 更新场景下避免主键冲突，依赖数据库自增
+            choice.setId(null);
+            choice.setCreateTime(null);
+
+            questionChoiceMapper.insert(choice);
+
+            if (Boolean.TRUE.equals(choice.getIsCorrect())) {
+                correctCount++;
+                if (!correctAnswer.isEmpty()) {
+                    correctAnswer.append(",");
+                }
+                correctAnswer.append((char) ('A' + sort));
+            }
+        }
+
+        boolean isMulti = Boolean.TRUE.equals(question.getMulti());
+        if (isMulti && correctCount < 2) {
+            throw new RuntimeException("多选题必须至少选择两个正确选项");
+        }
+        if (!isMulti && correctCount != 1) {
+            throw new RuntimeException("单选题必须且只能有一个正确选项");
+        }
+
+        answer.setAnswer(correctAnswer.toString());
     }
 
 

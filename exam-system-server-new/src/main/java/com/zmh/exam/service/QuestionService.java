@@ -5,8 +5,6 @@ import com.zmh.exam.entity.Question;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.zmh.exam.vo.QuestionQueryVo;
 
-import java.util.List;
-
 /**
  * 题目业务服务接口 - 定义题目相关的业务逻辑
  * 
@@ -43,4 +41,6 @@ public interface QuestionService extends IService<Question> {
     void customSaveQuestion(Question question);
 
     void customUpdateQuestion(Question question);
+
+    boolean customDeleteQuestion(Long id);
 }
