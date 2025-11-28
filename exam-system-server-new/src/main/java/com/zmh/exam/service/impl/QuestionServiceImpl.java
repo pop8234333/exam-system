@@ -2,6 +2,7 @@ package com.zmh.exam.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zmh.exam.common.CacheConstants;
 import com.zmh.exam.entity.*;
@@ -17,6 +18,7 @@ import com.zmh.exam.vo.QuestionQueryVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,18 +48,19 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     public Page<Question> getPage(Page<Question> pageBean, QuestionQueryVo questionQueryVo) {
         // 使用三元运算符判断null和空串
 
-        List<Question> list = lambdaQuery().eq(questionQueryVo.getCategoryId() != null, Question::getCategoryId, questionQueryVo.getCategoryId())
+        Page<Question> page = lambdaQuery().eq(questionQueryVo.getCategoryId() != null, Question::getCategoryId, questionQueryVo.getCategoryId())
                 .eq(questionQueryVo.getDifficulty() != null && !questionQueryVo.getDifficulty().isEmpty(), Question::getDifficulty, questionQueryVo.getDifficulty())
                 .eq(questionQueryVo.getType() != null && !questionQueryVo.getType().isEmpty(), Question::getType, questionQueryVo.getType())
                 .like(questionQueryVo.getKeyword() != null && !questionQueryVo.getKeyword().isEmpty(), Question::getTitle, questionQueryVo.getKeyword())
-                .orderByDesc(Question::getUpdateTime)//根据更新时间倒序排序
-                .list(pageBean);
+                .orderByDesc(Question::getUpdateTime)
+                .page(pageBean);//根据更新时间倒序排序
+
         //目前的list中还没有题目答案和题目选项列表和题目所属分类信息
         //拿到list中的id列表,然后再根据id列表查询对应的信息再赋值
-        enrichQuestions(list);
+        enrichQuestions(page);
 
 
-        return pageBean.setRecords(list);
+        return page;
     }
 
     @Override
@@ -95,6 +98,70 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         }).start();
         return question;
     }
+    /**
+     * 进行题目信息保存
+     * @param question
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void customSaveQuestion(Question question) {
+        // 0) 入参兜底，避免出现 NPE
+        if (question == null) {
+            throw new IllegalArgumentException("题目信息不能为空");
+        }
+
+        // 1) 校验“同类型 + 同标题”是否已存在，依赖逻辑删除字段自动过滤已删除数据
+        boolean exists = lambdaQuery()
+                .eq(Question::getType, question.getType())
+                .eq(Question::getTitle, question.getTitle())
+                .exists();
+        if (exists) {
+            throw new RuntimeException("同类型下已存在相同标题的题目，保存失败：" + question.getTitle());
+        }
+
+        // 2) 先保存题目主体，获取自增的题目 ID，后续子表要用到
+        boolean saved = save(question);
+        if (!saved || question.getId() == null) {
+            throw new RuntimeException("题目主体保存失败，无法继续保存选项与答案");
+        }
+
+        // 3) 准备答案对象（非选择题直接使用传入答案；选择题稍后根据正确选项生成）
+        QuestionAnswer answer = question.getAnswer() == null ? new QuestionAnswer() : question.getAnswer();
+        answer.setQuestionId(question.getId());
+
+        // 4) 如果是选择题：逐条落库选项，并动态拼接标准答案（A/B/C... 多选用逗号分隔）
+        if ("CHOICE".equals(question.getType())) {
+            List<QuestionChoice> choices = question.getChoices();
+            if (choices == null || choices.isEmpty()) {
+                throw new RuntimeException("选择题至少需要配置一个选项");
+            }
+
+            StringBuilder correctAnswer = new StringBuilder();
+            for (int i = 0; i < choices.size(); i++) {
+                QuestionChoice choice = choices.get(i);
+                // 若前端未指定排序，默认用当前下标（从 0 开始）确保选项顺序固定
+                int sort = choice.getSort() == null ? i : choice.getSort();
+                choice.setSort(sort);
+                choice.setQuestionId(question.getId());
+                questionChoiceMapper.insert(choice);
+
+                // 根据正确选项生成答案字母（0->A，1->B...），多选用英文逗号拼接
+                if (Boolean.TRUE.equals(choice.getIsCorrect())) {
+                    if (!correctAnswer.isEmpty()) {
+                        correctAnswer.append(",");
+                    }
+                    correctAnswer.append((char) ('A' + sort));
+                }
+            }
+            answer.setAnswer(correctAnswer.toString());
+        } else if ("JUDGE".equals(question.getType()) && answer.getAnswer() != null) {
+            // 判断题统一小写 true/false，避免大小写导致的判题问题
+            answer.setAnswer(answer.getAnswer().toLowerCase());
+        }
+
+        // 5) 题目答案入库（选择题已在上面生成，其他题型直接使用原答案）
+        questionAnswerMapper.insert(answer);
+    }
 
     //定义进行题目访问次数增长的方法
     //异步方法
@@ -105,7 +172,8 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
 
 
     /* 批量查询并回填答案、选项、分类信息 */
-    private void enrichQuestions(List<Question> questions) {
+    private void enrichQuestions(Page<Question> page) {
+        List<Question> questions = page.getRecords();
         //拿到list中的id列表,然后再根据id列表查询对应的信息再赋值
         if (questions == null || questions.isEmpty()) {
             return;

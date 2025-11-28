@@ -36,4 +36,9 @@ public interface QuestionService extends IService<Question> {
     Page<Question> getPage(Page<Question> pageBean, QuestionQueryVo questionQueryVo);
 
     Question customDetailQuestion(Long id);
+    /**
+     * 进行题目信息保存
+     * @param question
+     */
+    void customSaveQuestion(Question question);
 }
