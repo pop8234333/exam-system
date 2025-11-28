@@ -182,27 +182,32 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     }
 
     @Override
-    public boolean customDeleteQuestion(Long id) {
+    @Transactional(rollbackFor = Exception.class)
+    public void customDeleteQuestion(Long id) {
         // 四、题目删除
-        boolean success = true;
         // 关键点1:先检查当前题目是否被试卷引用,未被引用的题目才可以删除
-        boolean exists= paperQuestionMapper.exists(new LambdaQueryWrapper<PaperQuestion>().eq(PaperQuestion::getQuestionId, id));
+        boolean paperQuestionExists= paperQuestionMapper.exists(new LambdaQueryWrapper<PaperQuestion>().eq(PaperQuestion::getQuestionId, id));
 
-        if (exists) {
-            throw new RuntimeException("当前题目被被试卷引用");
+        if (paperQuestionExists) {
+            throw new RuntimeException("当前题目被试卷引用");
         }
         //下面就开始进行删除逻辑
         //删除必须先删除与题目表相关联的附属数据:比如题目答案表数据,题目选项表数据!!!!
         //题目答案数据表一定有,必删除
         questionAnswerMapper.delete(new LambdaQueryWrapper<QuestionAnswer>().eq(QuestionAnswer::getQuestionId, id));
-        //判断改题目是否为选择题
+        // 不管是不是选择题，直接删除相关的选择题选项
+        // 如果没有匹配的记录，delete方法也不会报错，只是返回删除的记录数为0
+        questionChoiceMapper.delete(new LambdaQueryWrapper<QuestionChoice>().eq(QuestionChoice::getQuestionId, id));
 
+        boolean success = removeById(id);
+        if (!success) {
+            throw new RuntimeException("题目删除失败");
+        }
 
         // 关键点2:先删除关联数据,再删除题目本身
         //        答案(一定有)(逻辑删除)
         //        选项(选择题有)(逻辑删除)
         // 关键点3:使用逻辑删除
-        return true;
     }
 
     //定义进行题目访问次数增长的方法

@@ -14,7 +14,7 @@ import com.zmh.exam.vo.QuestionQueryVo;
  * 3. 继承IService：使用MyBatis Plus提供的通用服务接口，减少重复代码
  * 4. 事务管理：Service层是事务的边界，复杂业务操作应该加@Transactional
  * 5. 业务封装：将复杂的数据操作封装成有业务意义的方法
- * 
+ *
  * MyBatis Plus教学：
  * - IService<T>：提供基础的CRUD方法（save、update、remove、list等）
  * - 自定义方法：在接口中定义特定业务需求的方法
@@ -42,5 +42,5 @@ public interface QuestionService extends IService<Question> {
 
     void customUpdateQuestion(Question question);
 
-    boolean customDeleteQuestion(Long id);
+    void customDeleteQuestion(Long id);
 }

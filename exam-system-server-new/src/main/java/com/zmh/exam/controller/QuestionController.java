@@ -166,13 +166,11 @@ public class QuestionController {
     @Operation(summary = "删除题目", description = "根据ID删除指定的题目，包括关联的选项和答案数据")  // API描述
     public Result<String> deleteQuestion(
             @Parameter(description = "题目ID") @PathVariable Long id) {
-        boolean success = questionService.customDeleteQuestion(id);
+
+        questionService.customDeleteQuestion(id);
         // 根据操作结果返回不同的响应
-        if (success) {
-            return Result.success("题目删除成功");
-        } else {
-            return Result.error("题目删除失败");
-        }
+        return Result.success("题目删除成功");
+
     }
     
     /**
