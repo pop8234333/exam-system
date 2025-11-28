@@ -162,6 +162,66 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         // 5) 题目答案入库（选择题已在上面生成，其他题型直接使用原答案）
         questionAnswerMapper.insert(answer);
     }
+    /**
+     * 进行题目信息更新
+     * @param question
+     */
+    @Override
+    public void customUpdateQuestion(Question question) {
+
+        //检验同类型+标题唯一(排除自己)
+        boolean exists = lambdaQuery()
+                .eq(Question::getType, question.getType())
+                .eq(Question::getTitle, question.getTitle())
+                .ne(Question::getId, question.getId())
+                .exists();
+        if (exists) {
+            throw new RuntimeException("同类型下已存在相同标题的题目,修改失败:"+question.getTitle());
+        }
+        //更新题目主题
+        boolean updated = updateById(question);
+        if (!updated || question.getId() == null) {
+            throw new RuntimeException("题目更新失败:"+question.getId());
+        }
+        QuestionAnswer answer = question.getAnswer() == null ? new QuestionAnswer() : question.getAnswer();
+        answer.setQuestionId(question.getId());
+
+        // 4) 选择题：先删旧选项再插入新选项，并重算正确答案
+        if ("CHOICE".equals(question.getType())) {
+            questionChoiceMapper.delete(new LambdaQueryWrapper<QuestionChoice>()
+                    .eq(QuestionChoice::getQuestionId, question.getId()));
+
+            List<QuestionChoice> choices = question.getChoices();
+            if (choices == null || choices.isEmpty()) {
+                throw new RuntimeException("选择题至少需要配置一个选项");
+            }
+
+            StringBuilder correctAnswer = new StringBuilder();
+            for (int i = 0; i < choices.size(); i++) {
+                QuestionChoice choice = choices.get(i);
+                int sort = choice.getSort() == null ? i : choice.getSort();
+                choice.setId(null); //避免主键冲突
+                choice.setQuestionId(question.getId());
+                choice.setSort(sort);
+                questionChoiceMapper.insert(choice);
+                if (Boolean.TRUE.equals(choice.getIsCorrect())) {
+                    if (!correctAnswer.isEmpty()) correctAnswer.append(",");
+                    correctAnswer.append((char) ('A' + sort));
+                }
+            }
+            answer.setAnswer(correctAnswer.toString());
+        }else  if ("JUDGE".equals(question.getType()) && answer.getAnswer() != null) {
+            answer.setAnswer(answer.getAnswer().toLowerCase());
+        }
+
+        // 5) 更新答案（已存在则 updateById，否则 insert）
+        if (answer.getId() != null) {
+            questionAnswerMapper.updateById(answer);
+        }else {
+            questionAnswerMapper.insert(answer);
+        }
+
+    }
 
     //定义进行题目访问次数增长的方法
     //异步方法

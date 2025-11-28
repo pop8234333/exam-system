@@ -41,4 +41,6 @@ public interface QuestionService extends IService<Question> {
      * @param question
      */
     void customSaveQuestion(Question question);
+
+    void customUpdateQuestion(Question question);
 }
