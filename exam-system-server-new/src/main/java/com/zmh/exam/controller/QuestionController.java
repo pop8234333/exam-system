@@ -267,8 +267,9 @@ public class QuestionController {
     public Result<List<Question>> getPopularQuestions(
             @Parameter(description = "返回题目数量", example = "10") @RequestParam(defaultValue = "10") Integer size) {
 
-        // 异常处理：记录日志并返回友好的错误信息
-        return Result.error("获取热门题目失败");
+        // 调用服务层获取热门题目：按Redis热度优先，不足用最新题目补齐
+        List<Question> questions = questionService.getPopularQuestions(size);
+        return Result.success(questions);
 
     }
 
@@ -291,7 +292,9 @@ public class QuestionController {
     @Operation(summary = "刷新热门题目缓存", description = "管理员功能，重置或初始化热门题目的访问计数")
     public Result<Integer> refreshPopularQuestions() {
 
-        return Result.error("刷新热门题目缓存失败");
+        // 清空并重建热门题目排行，返回初始化的数量
+        int count = questionService.refreshPopularQuestions();
+        return Result.success(count);
     }
 
 } 

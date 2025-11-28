@@ -11,6 +11,7 @@ import com.zmh.exam.utils.RedisUtils;
 import com.zmh.exam.vo.QuestionQueryVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -208,6 +210,79 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         //        答案(一定有)(逻辑删除)
         //        选项(选择题有)(逻辑删除)
         // 关键点3:使用逻辑删除
+    }
+
+    @Override
+    public List<Question> getPopularQuestions(Integer size) {
+        // 1) 校验入参：null或非法则用默认值；同时设置硬性上限防止一次取太多
+        int limit = size == null || size <= 0 ? CacheConstants.POPULAR_QUESTIONS_COUNT : size;
+        limit = Math.min(limit, 100);
+
+        // 2) 先按热度从Redis获取热门题目ID列表（分数倒序），解析失败的ID会被跳过
+        List<Long> hotIds = new ArrayList<>();
+        try {
+            Set<ZSetOperations.TypedTuple<Object>> tuples = redisUtils.zReverseRangeWithScores(CacheConstants.POPULAR_QUESTIONS_KEY, 0, limit - 1);
+            if (tuples != null) {
+                for (ZSetOperations.TypedTuple<Object> tuple : tuples) {
+                    if (tuple == null || tuple.getValue() == null) {
+                        continue;
+                    }
+                    try {
+                        hotIds.add(Long.parseLong(tuple.getValue().toString()));
+                    } catch (NumberFormatException ex) {
+                        log.warn("热门题目ID解析失败，已跳过：{}", tuple.getValue()); // 容错：Redis里可能混入异常值
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("从Redis获取热门题目失败，将直接使用最新题目。", e); // Redis异常不影响整体功能，继续用DB兜底
+        }
+
+        // 3) 按热度ID顺序查询题目，保证返回顺序与热度一致
+        List<Question> result = new ArrayList<>();
+        if (!hotIds.isEmpty()) {
+            List<Question> hotQuestions = lambdaQuery().in(Question::getId, hotIds).list();
+            Map<Long, Question> hotMap = hotQuestions.stream()
+                    .collect(Collectors.toMap(Question::getId, Function.identity(), (a, b) -> a));
+            hotIds.forEach(id -> {
+                Question question = hotMap.get(id);
+                if (question != null) {
+                    result.add(question);
+                }
+            });
+        }
+
+        // 4) 数量不足时，用最新题目按创建时间倒序补足，且排除已有热门题目避免重复
+        if (result.size() < limit) {
+            int need = limit - result.size();
+            List<Long> excludeIds = result.stream()
+                    .map(Question::getId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            List<Question> latest = lambdaQuery()
+                    .notIn(!excludeIds.isEmpty(), Question::getId, excludeIds)
+                    .orderByDesc(Question::getCreateTime)
+                    .last("LIMIT " + need)
+                    .list();
+            result.addAll(latest);
+        }
+
+        // 5) 批量补充答案、选项、分类等详情，避免N+1
+        enrichQuestions(result);
+        return result;
+    }
+
+    @Override
+    public int refreshPopularQuestions() {
+        // 1) 清空旧的热门排行
+        redisUtils.delete(CacheConstants.POPULAR_QUESTIONS_KEY);
+        // 2) 用最新题目初始化排行榜，分数置0，避免空榜导致查询不到数据
+        List<Question> latest = lambdaQuery()
+                .orderByDesc(Question::getCreateTime)
+                .last("LIMIT " + CacheConstants.POPULAR_QUESTIONS_COUNT)
+                .list();
+        latest.forEach(question -> redisUtils.zAdd(CacheConstants.POPULAR_QUESTIONS_KEY, question.getId(), 0D));
+        return latest.size();
     }
 
     //定义进行题目访问次数增长的方法
