@@ -337,6 +337,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
      * 从Excel直接导入并落库
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Result<String> importFromExcel(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             return Result.error("请上传有效的Excel文件");
@@ -355,6 +356,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
      * 批量导入题目（支持Excel或AI生成的列表）
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Result<String> importQuestions(List<QuestionImportVo> questions) {
         String error = validateList(questions);
         if (error != null) {
