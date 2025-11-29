@@ -13,6 +13,13 @@ spring:
       port: 6379
       database: 2
       password: 123456
+      timeout: 2000ms  # 连接超时时间
+      lettuce:
+        pool:
+          max-active: 8   # 最大连接数
+          max-wait: -1    # 最大阻塞等待时间(-1表示无限制)
+          max-idle: 4     # 最大空闲连接
+          min-idle: 0     # 最小空闲连接
   #MySQL关系型数据库配置
   datasource:
     type: com.zaxxer.hikari.HikariDataSource

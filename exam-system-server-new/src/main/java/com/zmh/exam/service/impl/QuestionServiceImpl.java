@@ -117,7 +117,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 throw new RuntimeException("非选择题必须填写答案");
             }
             if (typeEnum == QuestionType.JUDGE) {
-                answer.setAnswer(answer.getAnswer().toLowerCase());
+                answer.setAnswer(answer.getAnswer().toUpperCase());
             }
         }
 
@@ -167,7 +167,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
             if (answer.getAnswer() == null || answer.getAnswer().trim().isEmpty()) {
                 throw new RuntimeException("非选择题必须填写答案");
             }
-            answer.setAnswer(answer.getAnswer().toLowerCase());
+            answer.setAnswer(answer.getAnswer().toUpperCase());
         } else {
             if (answer.getAnswer() == null || answer.getAnswer().trim().isEmpty()) {
                 throw new RuntimeException("非选择题必须填写答案");
@@ -248,6 +248,10 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
                 Question question = hotMap.get(id);
                 if (question != null) {
                     result.add(question);
+                } else {
+                    // 缓存中存在但数据库已删除的ID，立即清理缓存，防止反复命中无效数据
+                    redisUtils.zRemove(CacheConstants.POPULAR_QUESTIONS_KEY, id);
+                    log.info("移除已失效的热门题目ID缓存：{}", id);
                 }
             });
         }
