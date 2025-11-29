@@ -3,17 +3,23 @@ package com.zmh.exam.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zmh.exam.common.CacheConstants;
+import com.zmh.exam.common.Result;
 import com.zmh.exam.entity.*;
 import com.zmh.exam.mapper.*;
 import com.zmh.exam.service.QuestionService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zmh.exam.utils.ExcelUtil;
 import com.zmh.exam.utils.RedisUtils;
+import com.zmh.exam.vo.AiGenerateRequestVo;
 import com.zmh.exam.vo.QuestionQueryVo;
+import com.zmh.exam.vo.QuestionImportVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import cn.hutool.core.bean.BeanUtil;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -289,11 +295,201 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         return latest.size();
     }
 
+    /**
+     * 生成Excel导入模板，供前端下载
+     */
+    @Override
+    public byte[] generateImportTemplate() {
+        try {
+            byte[] data = ExcelUtil.generateTemplate();
+            log.info("生成题目导入模板成功，字节大小：{}", data.length);
+            return data;
+        } catch (Exception e) {
+            log.error("生成导入模板失败", e);
+            throw new RuntimeException("生成模板失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 预览Excel导入：仅解析与校验，不落库
+     */
+    @Override
+    public Result<List<QuestionImportVo>> previewImport(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return Result.error("请上传有效的Excel文件");
+        }
+        try {
+            List<QuestionImportVo> questions = ExcelUtil.parseExcel(file);
+            log.info("预览Excel开始，文件名：{}，初步解析行数：{}", file.getOriginalFilename(), questions.size());
+            String error = validateList(questions);
+            if (error != null) {
+                return Result.error(error);
+            }
+            log.info("预览Excel校验通过，记录数：{}", questions.size());
+            return Result.success(questions);
+        } catch (Exception e) {
+            log.error("预览Excel失败", e);
+            return Result.error("解析Excel失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 从Excel直接导入并落库
+     */
+    @Override
+    public Result<String> importFromExcel(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return Result.error("请上传有效的Excel文件");
+        }
+        try {
+            List<QuestionImportVo> questions = ExcelUtil.parseExcel(file);
+            log.info("Excel导入开始，文件名：{}，解析到记录数：{}", file.getOriginalFilename(), questions.size());
+            return importQuestions(questions);
+        } catch (Exception e) {
+            log.error("Excel导入失败", e);
+            return Result.error("Excel导入失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 批量导入题目（支持Excel或AI生成的列表）
+     */
+    @Override
+    public Result<String> importQuestions(List<QuestionImportVo> questions) {
+        String error = validateList(questions);
+        if (error != null) {
+            return Result.error(error);
+        }
+        try {
+            log.info("批量导入题目开始，数量：{}", questions.size());
+            for (QuestionImportVo vo : questions) {
+                Question question = convertToQuestion(vo);
+                customSaveQuestion(question);
+            }
+            log.info("批量导入题目完成，成功数量：{}", questions.size());
+            return Result.success("导入成功");
+        } catch (Exception e) {
+            log.error("批量导入题目失败", e);
+            return Result.error("批量导入题目失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 仅校验导入列表的合法性
+     */
+    @Override
+    public Result<String> validateQuestions(List<QuestionImportVo> questions) {
+        String error = validateList(questions);
+        if (error != null) {
+            return Result.error(error);
+        }
+        log.info("导入校验通过，记录数：{}", questions == null ? 0 : questions.size());
+        return Result.success("验证通过");
+    }
+
+    /**
+     * AI生成题目预留：当前未接入大模型
+     */
+    @Override
+    public Result<List<QuestionImportVo>> generateQuestionsByAi(AiGenerateRequestVo request) {
+        log.info("收到AI生成题目请求，topic={}，count={}，types={}", request.getTopic(), request.getCount(), request.getTypes());
+        // 预留AI接入点：当前仅返回未实现提示
+        return Result.error("AI生成题目暂未接入，请稍后再试");
+    }
+
     //定义进行题目访问次数增长的方法
     //异步方法
     private void incrementQuestion(Long questionId){
         Double score = redisUtils.zIncrementScore(CacheConstants.POPULAR_QUESTIONS_KEY,questionId,1);
         log.info("完成{}题目分数累计，累计后分数为：{}",questionId,score);
+    }
+
+    /**
+     * 列表级验证：检查空列表并逐条调用单题校验
+     * @param questions 导入题目列表
+     * @return 首个错误消息，全部通过时返回null
+     */
+    private String validateList(List<QuestionImportVo> questions) {
+        if (questions == null || questions.isEmpty()) {
+            return "未获取到题目数据，请检查文件内容";
+        }
+        for (int i = 0; i < questions.size(); i++) {
+            String error = validateSingleQuestion(questions.get(i), i + 1);
+            if (error != null) {
+                log.warn("导入校验失败，第{}题错误：{}", i + 1, error);
+                return error;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 验证单题数据合法性（类型、选项/答案完整性）
+     * @param question 单题数据
+     * @param index 序号（用于提示）
+     * @return 错误消息，校验通过返回null
+     */
+    private String validateSingleQuestion(QuestionImportVo question, int index) {
+        if (question.getTitle() == null || question.getTitle().trim().isEmpty()) {
+            return String.format("第%d题：题目内容不能为空", index);
+        }
+        String type = question.getType() == null ? null : question.getType().trim().toUpperCase();
+        if (type == null || type.isEmpty()) {
+            return String.format("第%d题：题目类型不能为空", index);
+        }
+        if (!"CHOICE".equals(type) && !"JUDGE".equals(type) && !"TEXT".equals(type)) {
+            return String.format("第%d题：题目类型必须是CHOICE、JUDGE或TEXT", index);
+        }
+        if ("CHOICE".equals(type)) {
+            if (question.getChoices() == null || question.getChoices().isEmpty()) {
+                return String.format("第%d题：选择题必须有选项", index);
+            }
+            if (question.getChoices().size() < 2) {
+                return String.format("第%d题：选择题至少需要2个选项", index);
+            }
+            boolean hasCorrectAnswer = question.getChoices().stream()
+                    .anyMatch(choice -> choice.getIsCorrect() != null && choice.getIsCorrect());
+            if (!hasCorrectAnswer) {
+                return String.format("第%d题：选择题必须有正确答案", index);
+            }
+        } else {
+            if (question.getAnswer() == null || question.getAnswer().trim().isEmpty()) {
+                return String.format("第%d题：%s必须有答案", index, "JUDGE".equals(type) ? "判断题" : "简答题");
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 导入DTO转实体，统一落库入口
+     */
+    private Question convertToQuestion(QuestionImportVo vo) {
+        // 基础字段直接拷贝，忽略后续需要单独处理的字段
+        Question question = new Question();
+        BeanUtil.copyProperties(vo, question, "choices", "answer", "keywords");
+        question.setType(vo.getType() == null ? null : vo.getType().toUpperCase());
+
+        if ("CHOICE".equalsIgnoreCase(question.getType())) {
+            List<QuestionChoice> choices = new ArrayList<>();
+            List<QuestionImportVo.ChoiceImportDto> choiceVos = vo.getChoices();
+            if (choiceVos != null) {
+                for (int i = 0; i < choiceVos.size(); i++) {
+                    QuestionImportVo.ChoiceImportDto cvo = choiceVos.get(i);
+                    QuestionChoice choice = new QuestionChoice();
+                    choice.setContent(cvo.getContent());
+                    choice.setIsCorrect(cvo.getIsCorrect());
+                    choice.setSort(cvo.getSort() == null ? i : cvo.getSort());
+                    choices.add(choice);
+                }
+            }
+            question.setChoices(choices);
+        } else {
+            QuestionAnswer answer = new QuestionAnswer();
+            answer.setAnswer(vo.getAnswer());
+            answer.setKeywords(vo.getKeywords());
+            question.setAnswer(answer);
+        }
+        return question;
     }
 
 

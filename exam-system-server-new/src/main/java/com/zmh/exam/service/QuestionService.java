@@ -3,7 +3,11 @@ package com.zmh.exam.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zmh.exam.entity.Question;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.zmh.exam.common.Result;
 import com.zmh.exam.vo.QuestionQueryVo;
+import com.zmh.exam.vo.AiGenerateRequestVo;
+import com.zmh.exam.vo.QuestionImportVo;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -58,4 +62,45 @@ public interface QuestionService extends IService<Question> {
      * @return 初始化的热门题目数量
      */
     int refreshPopularQuestions();
+
+    /**
+     * 生成导入模板
+     * @return Excel模板字节数组
+     */
+    byte[] generateImportTemplate();
+
+    /**
+     * 预览导入内容（只解析不入库）
+     * @param file Excel文件
+     * @return 解析结果
+     */
+    Result<List<QuestionImportVo>> previewImport(MultipartFile file);
+
+    /**
+     * 直接从Excel导入
+     * @param file Excel文件
+     * @return 导入结果
+     */
+    Result<String> importFromExcel(MultipartFile file);
+
+    /**
+     * 批量导入（来自Excel或AI）
+     * @param questions 题目列表
+     * @return 导入结果
+     */
+    Result<String> importQuestions(List<QuestionImportVo> questions);
+
+    /**
+     * 校验导入列表
+     * @param questions 题目列表
+     * @return 校验结果
+     */
+    Result<String> validateQuestions(List<QuestionImportVo> questions);
+
+    /**
+     * AI生成题目（预览）
+     * @param request 生成请求
+     * @return 题目列表
+     */
+    Result<List<QuestionImportVo>> generateQuestionsByAi(AiGenerateRequestVo request);
 }
