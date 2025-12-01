@@ -1,5 +1,6 @@
 package com.zmh.exam.vo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -35,6 +36,7 @@ public class ChatRequest implements Serializable {
     /**
      * 最大生成token数
      */
+    @JsonProperty("max_tokens")
     private Integer maxTokens; // 最大生成token数
 
     private static final long serialVersionUID = 1L; // 序列化版本UID
