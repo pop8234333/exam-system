@@ -34,11 +34,23 @@ spring:
       maximum-pool-size: 12 #连接池最大连接数，默认是10
       minimum-idle: 10 #最小空闲连接数量
       pool-name: SPHHikariPool # 连接池名称
-
+  ai:
+    deepseek:
+          api-key: ${DEEPSEEK_API_KEY:your-api-key-here}  # 从环境变量获取API密钥，或设置默认值
+          base-url: https://api.deepseek.com/v1
   servlet:
     multipart:
-      max-file-size: 100MB
-      max-request-size: 150MB
+          max-file-size: 100MB
+          max-request-size: 150MB
+# AI 服务配置
+kimi:
+  api:
+    uri: https://api.moonshot.cn/v1
+    api-key: ${MOONSHOT_API_KEY}  # 从环境变量获取，或使用默认值
+    model: kimi-k2-0905-preview  # 使用8k上下文模型进行判卷
+    max-tokens: 2000  # 最大生成token数
+    temperature: 0.3  # 较低的temperature确保判卷结果稳定
+# 添加DeepSeek配置
 
 #用于打印框架生成的sql语句，便于调试
 mybatis-plus:

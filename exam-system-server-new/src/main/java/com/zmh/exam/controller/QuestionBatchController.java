@@ -2,6 +2,7 @@ package com.zmh.exam.controller;
 
 
 import com.zmh.exam.common.Result;
+import com.zmh.exam.service.KimiAiService;
 import com.zmh.exam.service.QuestionService;
 import com.zmh.exam.vo.AiGenerateRequestVo;
 import com.zmh.exam.vo.QuestionImportVo;
@@ -31,6 +32,7 @@ import java.util.List;
 public class QuestionBatchController {
     
     private final QuestionService questionService;
+    private final KimiAiService kimiAiService;
 
     /**
      * 下载Excel导入模板。
@@ -76,7 +78,7 @@ public class QuestionBatchController {
     @Operation(summary = "AI智能生成题目", description = "使用AI技术根据指定主题和要求智能生成题目，支持预览后再决定是否导入")
     public Result<List<QuestionImportVo>> generateQuestionsByAi(
             @RequestBody @Validated AiGenerateRequestVo request) {
-        return questionService.generateQuestionsByAi(request);
+        return kimiAiService.generateQuestionsByAi(request);
     }
     
     /**

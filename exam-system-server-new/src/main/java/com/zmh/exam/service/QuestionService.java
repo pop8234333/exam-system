@@ -97,10 +97,5 @@ public interface QuestionService extends IService<Question> {
      */
     Result<String> validateQuestions(List<QuestionImportVo> questions);
 
-    /**
-     * AI生成题目（预览）
-     * @param request 生成请求
-     * @return 题目列表
-     */
-    Result<List<QuestionImportVo>> generateQuestionsByAi(AiGenerateRequestVo request);
+
 }

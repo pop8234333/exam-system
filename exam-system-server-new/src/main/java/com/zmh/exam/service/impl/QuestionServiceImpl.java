@@ -389,15 +389,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         return Result.success("验证通过");
     }
 
-    /**
-     * AI生成题目预留：当前未接入大模型
-     */
-    @Override
-    public Result<List<QuestionImportVo>> generateQuestionsByAi(AiGenerateRequestVo request) {
-        log.info("收到AI生成题目请求，topic={}，count={}，types={}", request.getTopic(), request.getCount(), request.getTypes());
-        // 预留AI接入点：当前仅返回未实现提示
-        return Result.error("AI生成题目暂未接入，请稍后再试");
-    }
+
 
     //定义进行题目访问次数增长的方法
     //异步方法
