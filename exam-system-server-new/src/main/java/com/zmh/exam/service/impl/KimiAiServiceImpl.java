@@ -35,36 +35,33 @@ public class KimiAiServiceImpl implements KimiAiService {
 
     private final WebClient webClient;
 
-    private static final Duration AI_TIMEOUT = Duration.ofSeconds(90);
+    private static final Duration AI_TIMEOUT = Duration.ofSeconds(120); // 增加超时时间以支持大量题目生成
 
     /**
-     * 构建发送给AI的提示词
+     * 构建发送给AI的提示词（优化版，减少token消耗）
      */
     public String buildPrompt(AiGenerateRequestVo request) {
         StringBuilder prompt = new StringBuilder();
 
         // 说明生成数量与主题
-        prompt.append("请为我生成").append(request.getCount()).append("道关于【")
-                .append(request.getTopic()).append("】的题目。\n\n");
-
-        // 基础要求标题
-        prompt.append("要求：\n");
+        prompt.append("请生成").append(request.getCount()).append("道【")
+                .append(request.getTopic()).append("】题目。\n\n");
 
         // 题目类型要求
         if (request.getTypes() != null && !request.getTypes().isEmpty()) {
             String[] typeList = request.getTypes().split(",");
-            prompt.append("- 题目类型：");
+            prompt.append("类型：");
             for (String type : typeList) {
                 switch (type.trim()) {
                     case "CHOICE":
                         prompt.append("选择题");
                         if (request.getIncludeMultiple() != null && request.getIncludeMultiple()) {
-                            prompt.append("(包含单选和多选)");
+                            prompt.append("(含单选多选)");
                         }
                         prompt.append(" ");
                         break;
                     case "JUDGE":
-                        prompt.append("判断题（**重要：确保正确答案和错误答案的数量大致平衡，不要全部都是正确或错误**） ");
+                        prompt.append("判断题（正确/错误数量平衡） ");
                         break;
                     case "TEXT":
                         prompt.append("简答题 ");
@@ -82,62 +79,27 @@ public class KimiAiServiceImpl implements KimiAiService {
                 case "HARD" -> "困难";
                 default -> "中等";
             };
-            prompt.append("- 难度等级：").append(difficultyText).append("\n");
+            prompt.append("难度：").append(difficultyText).append("\n");
         }
 
         // 额外要求
         if (request.getRequirements() != null && !request.getRequirements().isEmpty()) {
-            prompt.append("- 特殊要求：").append(request.getRequirements()).append("\n");
+            prompt.append("特殊要求：").append(request.getRequirements()).append("\n");
         }
 
-        // 判断题特别要求
-        if (request.getTypes() != null && request.getTypes().contains("JUDGE")) {
-            prompt.append("- **判断题特别要求**：\n");
-            prompt.append("  * 确保生成的判断题中，正确答案(TRUE)和错误答案(FALSE)的数量尽量平衡\n");
-            prompt.append("  * 不要所有判断题都是正确的或都是错误的\n");
-            prompt.append("  * 错误的陈述应该是常见的误解或容易混淆的概念\n");
-            prompt.append("  * 正确的陈述应该是重要的基础知识点\n");
-        }
+        // 简化的JSON格式说明
+        prompt.append("\n返回JSON格式：\n");
+        prompt.append("{\"questions\":[{\"title\":\"题目\",\"type\":\"CHOICE|JUDGE|TEXT\",");
+        prompt.append("\"multi\":true/false,\"difficulty\":\"EASY|MEDIUM|HARD\",\"score\":5,");
+        prompt.append("\"choices\":[{\"content\":\"选项\",\"isCorrect\":true/false,\"sort\":1}],");
+        prompt.append("\"answer\":\"TRUE/FALSE\",\"analysis\":\"解析\"}]}\n\n");
 
-        // 规范返回格式，明确为纯JSON
-        prompt.append("\n请严格按照以下JSON格式返回，不要包含任何其他文字：\n");
-        prompt.append("```json\n");
-        prompt.append("{\n");
-        prompt.append("  \"questions\": [\n");
-        prompt.append("    {\n");
-        prompt.append("      \"title\": \"题目内容\",\n");
-        prompt.append("      \"type\": \"CHOICE|JUDGE|TEXT\",\n");
-        prompt.append("      \"multi\": true/false,\n");
-        prompt.append("      \"difficulty\": \"EASY|MEDIUM|HARD\",\n");
-        prompt.append("      \"score\": 5,\n");
-        prompt.append("      \"choices\": [\n");
-        prompt.append("        {\"content\": \"选项内容\", \"isCorrect\": true/false, \"sort\": 1}\n");
-        prompt.append("      ],\n");
-        prompt.append("      \"answer\": \"TRUE或FALSE(判断题专用)|文本答案(简答题专用)\",\n");
-        prompt.append("      \"analysis\": \"题目解析\"\n");
-        prompt.append("    }\n");
-        prompt.append("  ]\n");
-        prompt.append("}\n");
-        prompt.append("```\n\n");
-
-        prompt.append("注意：\n");
-        prompt.append("1. 选择题必须有choices数组，判断题和简答题设置answer字段\n");
-        prompt.append("2. 多选题的multi字段设为true，单选题设为false\n");
-        prompt.append("3. **判断题的answer字段只能是\"TRUE\"或\"FALSE\"，请确保答案分布合理**\n");
-        prompt.append("4. 每道题都要有详细的解析\n");
-        prompt.append("5. 题目要有实际价值，贴近实际应用场景\n");
-        prompt.append("6. 严格按照JSON格式返回，确保可以正确解析\n");
-
-        // 如果只生成判断题，额外强调答案平衡
-        if (request.getTypes() != null && request.getTypes().equals("JUDGE") && request.getCount() > 1) {
-            prompt.append("7. **判断题答案分布要求**：在").append(request.getCount()).append("道判断题中，");
-            int halfCount = request.getCount() / 2;
-            if (request.getCount() % 2 == 0) {
-                prompt.append("请生成").append(halfCount).append("道正确(TRUE)和").append(halfCount).append("道错误(FALSE)的题目");
-            } else {
-                prompt.append("请生成约").append(halfCount).append("-").append(halfCount + 1).append("道正确(TRUE)和约").append(halfCount).append("-").append(halfCount + 1).append("道错误(FALSE)的题目");
-            }
-        }
+        // 精简的注意事项
+        prompt.append("注意：");
+        prompt.append("1.选择题用choices，判断/简答题用answer ");
+        prompt.append("2.多选题multi=true ");
+        prompt.append("3.判断题answer为TRUE或FALSE ");
+        prompt.append("4.严格返回JSON格式\n");
 
         return prompt.toString();
     }
