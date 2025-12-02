@@ -48,7 +48,7 @@ kimi:
     uri: https://api.moonshot.cn/v1
     api-key: ${MOONSHOT_API_KEY}  # 从环境变量获取，或使用默认值
     model: kimi-k2-0905-preview  # 使用8k上下文模型进行判卷
-    max-tokens: 4000  # 最大生成token数（增加以支持更多题目生成）
+    max-tokens: 8196  # 最大生成token数（增加以支持更多题目生成）
     temperature: 0.3  # 较低的temperature确保判卷结果稳定
 # 添加DeepSeek配置
 
