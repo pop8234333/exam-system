@@ -74,7 +74,9 @@ public class PaperController {
     public Result<Paper> updatePaper(
             @Parameter(description = "试卷ID") @PathVariable Integer id, 
             @RequestBody PaperVo paperVo) {
-        return Result.success(null, "试卷更新成功");
+        Paper paper = paperService.customUpdatePaper(id,paperVo);
+        log.info("试卷{}信息更新成功！！",paper);
+        return Result.success(paper, "试卷更新成功");
     }
 
     /**
@@ -85,7 +87,9 @@ public class PaperController {
     @PostMapping("/ai")  // 处理POST请求
     @Operation(summary = "AI智能组卷", description = "基于设定的规则（题型分布、难度配比等）使用AI自动生成试卷")  // API描述
     public Result<Paper> createPaperWithAI(@RequestBody AiPaperVo aiPaperVo) {
-        return Result.success(null, "AI智能组卷成功");
+        Paper paper = paperService.customAiCreatePaper(aiPaperVo);
+        log.info("智能组卷成功！试卷信息为：{}",paper);
+        return Result.success(paper, "AI智能组卷成功");
     }
 
     /**

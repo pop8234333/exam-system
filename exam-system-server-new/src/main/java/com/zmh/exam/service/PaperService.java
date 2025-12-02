@@ -2,6 +2,7 @@ package com.zmh.exam.service;
 
 import com.zmh.exam.entity.Paper;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.zmh.exam.vo.AiPaperVo;
 import com.zmh.exam.vo.PaperVo;
 
 /**
@@ -12,4 +13,8 @@ public interface PaperService extends IService<Paper> {
     Paper customPaperDetailById(Integer id);
 
     Paper customCreatePaper(PaperVo paperVo);
+
+    Paper customAiCreatePaper(AiPaperVo aiPaperVo);
+
+    Paper customUpdatePaper(Integer id, PaperVo paperVo);
 }
