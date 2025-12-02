@@ -21,7 +21,7 @@ public class PaperQuestion extends BaseEntity {
     /**
      * 试卷ID
      */
-    private Integer paperId; // 试卷ID
+    private Long paperId; // 试卷ID
 
     /**
      * 题目ID
@@ -40,7 +40,7 @@ public class PaperQuestion extends BaseEntity {
      * @param questionId 题目ID
      * @param score 分数
      */
-    public PaperQuestion(Integer paperId, Long questionId, BigDecimal score) {
+    public PaperQuestion(Long paperId, Long questionId, BigDecimal score) {
         this.paperId = paperId;
         this.questionId = questionId;
         this.score = score;
