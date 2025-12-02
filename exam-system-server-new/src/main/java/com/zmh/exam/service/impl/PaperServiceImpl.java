@@ -4,9 +4,11 @@ package com.zmh.exam.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.update.LambdaUpdateChainWrapper;
+import com.zmh.exam.entity.ExamRecord;
 import com.zmh.exam.entity.Paper;
 import com.zmh.exam.entity.PaperQuestion;
 import com.zmh.exam.entity.Question;
+import com.zmh.exam.mapper.ExamRecordMapper;
 import com.zmh.exam.mapper.PaperMapper;
 import com.zmh.exam.mapper.PaperQuestionMapper;
 import com.zmh.exam.service.PaperService;
@@ -36,6 +38,7 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
     private final PaperMapper paperMapper;
     private final PaperQuestionMapper paperQuestionMapper;
     private final QuestionService questionService;
+    private final ExamRecordMapper examRecordMapper;
 
 
     @Override
@@ -216,6 +219,7 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
         return paper;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public Paper customUpdatePaper(Integer id, PaperVo paperVo) {
         //先判断该试卷是否可以修改
@@ -290,6 +294,7 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
         return paper;
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void customUpdatePaperStatus(Integer id, String status) {
         //先判断该试卷是否可以修改
@@ -299,5 +304,30 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
         }
         paper.setStatus(status);
         paperMapper.updateById(paper);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void customRemoveId(Integer id) {
+        Paper paper = getById(id);
+        if (paper == null) {
+            throw new RuntimeException("不存在id为"+id+"的试卷信息");
+        }
+        //1. 当前试卷状态不能是发布状态
+        if ("PUBLISHED".equals(paper.getStatus())) {
+            throw new RuntimeException("已发布试卷不可删除");
+        }
+
+        //2.该试卷不能有关联的考试记录
+        boolean exists = examRecordMapper.exists(new LambdaQueryWrapper<ExamRecord>()
+                .eq(ExamRecord::getExamId, id));
+        if (exists) {
+            throw new RuntimeException("该试卷id:"+id+"有相关联的考试记录,不能删除");
+        }
+        //进行本体表数据删除
+        removeById(id);
+        //删除中间表数据
+        paperQuestionMapper.delete(new LambdaQueryWrapper<PaperQuestion>()
+                .eq(PaperQuestion::getPaperId, paper.getId()));
     }
 }

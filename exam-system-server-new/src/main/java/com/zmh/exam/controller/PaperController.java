@@ -115,6 +115,7 @@ public class PaperController {
             @Parameter(description = "试卷ID") @PathVariable Integer id, 
             @Parameter(description = "新的状态，可选值：PUBLISHED/STOPPED") @RequestParam String status) {
         paperService.customUpdatePaperStatus(id,status);
+        log.info("id:{}的试卷状态更新成功！",id);
         return Result.success(null, "状态更新成功");
     }
 
@@ -127,7 +128,8 @@ public class PaperController {
     @Operation(summary = "删除试卷", description = "删除指定的试卷，注意：已发布的试卷不能删除")  // API描述
     public Result<Void> deletePaper(@Parameter(description = "试卷ID") @PathVariable Integer id) {
         // 检查试卷是否存在  // 验证试卷存在性
-
-        return Result.error("试卷删除失败");
+        paperService.customRemoveId(id);
+        log.info("id:{}的试卷删除成功！",id);
+        return Result.success("试卷删除成功！！");
     }
 } 
