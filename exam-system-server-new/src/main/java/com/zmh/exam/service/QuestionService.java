@@ -7,6 +7,7 @@ import com.zmh.exam.common.Result;
 import com.zmh.exam.vo.QuestionQueryVo;
 import com.zmh.exam.vo.AiGenerateRequestVo;
 import com.zmh.exam.vo.QuestionImportVo;
+import com.zmh.exam.vo.RuleVo;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -98,4 +99,7 @@ public interface QuestionService extends IService<Question> {
     Result<String> validateQuestions(List<QuestionImportVo> questions);
 
 
+    List<Question> listQuestionsByIds(List<Long> questionIdList);
+
+    List<Question> listQuestionsByRules(List<RuleVo> rules);
 }

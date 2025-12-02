@@ -13,19 +13,19 @@ import com.zmh.exam.utils.RedisUtils;
 import com.zmh.exam.vo.AiGenerateRequestVo;
 import com.zmh.exam.vo.QuestionQueryVo;
 import com.zmh.exam.vo.QuestionImportVo;
+import com.zmh.exam.vo.RuleVo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import cn.hutool.core.bean.BeanUtil;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,6 +43,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     private final QuestionChoiceMapper questionChoiceMapper;
     private final RedisUtils redisUtils;
     private final PaperQuestionMapper paperQuestionMapper;
+    private final QuestionMapper questionMapper;
 
 
     @Override
@@ -389,6 +390,64 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         return Result.success("验证通过");
     }
 
+    /**
+     *  批量查询题目
+     * @param questionIdList
+     * @return List<Question>
+     */
+    @Override
+    public List<Question> listQuestionsByIds(List<Long> questionIdList) {
+        List<Question> list = lambdaQuery().in(Question::getId, questionIdList).list();
+        enrichQuestions(list);
+        return list;
+    }
+
+    @Override
+    public List<Question> listQuestionsByRules(List<RuleVo> rules) {
+        // 汇总题目列表（保持规则顺序）
+        List<Question> allQuestionList = new ArrayList<>();
+        // 防止多条规则命中同一题目导致重复
+        Set<Long> dedupIds = new HashSet<>();
+        // 无规则直接返回空列表
+        if (rules == null || rules.isEmpty()) {
+            return allQuestionList;
+        }
+        for (RuleVo rule : rules) {
+            // 保护性校验：规则为空、类型为空或数量无效直接跳过
+            if (rule == null || rule.getType() == null || rule.getCount() == null || rule.getCount() <= 0) {
+                continue;
+            }
+            // 构造查询条件：题型必选
+            LambdaQueryWrapper<Question> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Question::getType, rule.getType().name());
+            // 分类可选：仅在传入分类ID时追加
+            queryWrapper.in(!ObjectUtils.isEmpty(rule.getCategoryIds()),
+                    Question::getCategoryId, rule.getCategoryIds());
+
+            // 拉取符合题型+分类的题目
+            List<Question> questions = questionMapper.selectList(queryWrapper);
+            if (questions == null || questions.isEmpty()) {
+                log.warn("规则类型 {} 分类 {} 未找到题目", rule.getType(), rule.getCategoryIds());
+                continue;
+            }
+            // 取规则要求数量与可用数量的最小值
+            int realNumbers = Math.min(rule.getCount(), questions.size());
+            // 先随机打乱，再截取需要的题目数量
+            Collections.shuffle(questions);
+            List<Question> picked = questions.subList(0, realNumbers);
+            // 去重后汇总
+            for (Question q : picked) {
+                if (q != null && q.getId() != null && dedupIds.add(q.getId())) {
+                    q.setPaperScore(BigDecimal.valueOf(rule.getScore()));
+                    allQuestionList.add(q);
+                }
+            }
+        }
+
+        // 批量补全答案/选项/分类信息
+        enrichQuestions(allQuestionList);
+        return allQuestionList;
+    }
 
 
     //定义进行题目访问次数增长的方法
