@@ -114,6 +114,7 @@ public class PaperController {
     public Result<Void> updatePaperStatus(
             @Parameter(description = "试卷ID") @PathVariable Integer id, 
             @Parameter(description = "新的状态，可选值：PUBLISHED/STOPPED") @RequestParam String status) {
+        paperService.customUpdatePaperStatus(id,status);
         return Result.success(null, "状态更新成功");
     }
 

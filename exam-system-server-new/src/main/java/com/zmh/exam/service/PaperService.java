@@ -17,4 +17,6 @@ public interface PaperService extends IService<Paper> {
     Paper customAiCreatePaper(AiPaperVo aiPaperVo);
 
     Paper customUpdatePaper(Integer id, PaperVo paperVo);
+
+    void customUpdatePaperStatus(Integer id, String status);
 }

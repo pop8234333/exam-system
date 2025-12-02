@@ -289,4 +289,15 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
 
         return paper;
     }
+
+    @Override
+    public void customUpdatePaperStatus(Integer id, String status) {
+        //先判断该试卷是否可以修改
+        Paper paper = getById(id);
+        if (paper == null) {
+            throw new RuntimeException("不存在id为"+id+"的试卷信息");
+        }
+        paper.setStatus(status);
+        paperMapper.updateById(paper);
+    }
 }
