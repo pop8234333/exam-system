@@ -163,7 +163,6 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
             String type = question.getType();
             switch (type) {
                 case "CHOICE":
-                    userAnswer = normalizeJudgeAnswer(userAnswer);
                     //这里还可以继续判断是否为多选,多选题对一部分能拿部分分
                     if (answer.equalsIgnoreCase(userAnswer)){
                         answerRecord.setIsCorrect(1); //正确
@@ -176,6 +175,7 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
                     }
                     break;
                 case "JUDGE":
+                    userAnswer = normalizeJudgeAnswer(userAnswer);
                     if (answer.equalsIgnoreCase(userAnswer)){
                         answerRecord.setIsCorrect(1);//正确
                         answerRecord.setScore(maxScore);
