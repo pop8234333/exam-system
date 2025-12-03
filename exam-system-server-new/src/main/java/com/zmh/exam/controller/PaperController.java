@@ -27,7 +27,7 @@ import java.util.List;
 @RestController  // REST控制器，返回JSON数据
 @RequestMapping("/api/papers")  // 试卷API路径前缀
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3001")
+@CrossOrigin(origins = "*")  // 允许跨域访问
 @Slf4j
 @Tag(name = "试卷管理", description = "试卷相关操作，包括创建、查询、更新、删除，以及AI智能组卷功能")  // Swagger API分组
 public class PaperController {

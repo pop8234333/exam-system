@@ -19,6 +19,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/admin/videos")
+@CrossOrigin(origins = "*")  // 允许跨域访问
 @Tag(name = "视频管理(管理端)", description = "管理端视频相关操作，包括视频管理、审核、统计等功能")
 public class VideoAdminController {
 

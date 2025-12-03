@@ -22,6 +22,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/videos")
+@CrossOrigin(origins = "*")  // 允许跨域访问
 @Tag(name = "视频管理(用户端)", description = "用户端视频相关操作，包括视频浏览、观看、点赞、投稿等功能")
 public class VideoController {
 

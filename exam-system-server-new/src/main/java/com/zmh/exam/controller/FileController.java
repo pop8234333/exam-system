@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 @Slf4j
 @RestController
 @RequestMapping("/files")
-@CrossOrigin
+@CrossOrigin(origins = "*")  // 允许跨域访问
 public class FileController {
 
     @Value("${file.upload.path:./uploads/}")  // 本地文件存储路径

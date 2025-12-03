@@ -17,7 +17,7 @@ import java.util.List;
  */
 @RestController  // REST控制器，返回JSON数据
 @RequestMapping("/api/notices")  // 公告API路径前缀
-@CrossOrigin  // 允许跨域访问
+@CrossOrigin(origins = "*")  // 允许跨域访问
 @Tag(name = "公告管理", description = "系统公告相关操作，包括公告发布、编辑、删除、状态管理等功能")  // Swagger API分组
 public class NoticeController {
     

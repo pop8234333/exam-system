@@ -17,7 +17,7 @@ import java.util.List;
  * 分类控制器 - 处理题目分类管理相关的HTTP请求
  * 包括分类的增删改查、树形结构展示等功能
  */
-@CrossOrigin(origins = "http://localhost:3001")
+@CrossOrigin(origins = "*")  // 允许跨域访问
 @RestController  // REST控制器，返回JSON数据
 @RequestMapping("/api/categories")  // 分类API路径前缀
 @RequiredArgsConstructor
