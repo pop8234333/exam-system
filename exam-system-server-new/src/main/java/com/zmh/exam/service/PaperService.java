@@ -10,6 +10,11 @@ import com.zmh.exam.vo.PaperVo;
  */
 public interface PaperService extends IService<Paper> {
 
+    /**
+     * 获取试卷详情(深度查询试卷所有信息)
+     * @param id
+     * @return Paper
+     */
     Paper customPaperDetailById(Integer id);
 
     Paper customCreatePaper(PaperVo paperVo);

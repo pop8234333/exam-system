@@ -2,12 +2,17 @@ package com.zmh.exam.controller;
 
 import com.zmh.exam.common.Result;
 import com.zmh.exam.entity.ExamRecord;
+
+import com.zmh.exam.service.ExamRecordService;
+import com.zmh.exam.service.ExamService;
 import com.zmh.exam.vo.ExamRankingVO;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,11 +24,15 @@ import java.util.List;
  * 考试记录控制器 - 处理考试记录管理相关的HTTP请求
  * 包括考试记录查询、分页展示、成绩排行榜等功能
  */
+@Slf4j
 @RestController  // REST控制器，返回JSON数据
 @RequestMapping("/api/exam-records")  // 考试记录API路径前缀
 @CrossOrigin(origins = "*")  // 允许跨域访问
+@RequiredArgsConstructor
 @Tag(name = "考试记录管理", description = "考试记录相关操作，包括记录查询、成绩管理、排行榜展示等功能")  // Swagger API分组
 public class ExamRecordController {
+    private final ExamRecordService examRecordService;
+    private final ExamService examService;
 
 
 
@@ -41,8 +50,10 @@ public class ExamRecordController {
             @Parameter(description = "开始日期，格式：yyyy-MM-dd") @RequestParam(required = false) String startDate,
             @Parameter(description = "结束日期，格式：yyyy-MM-dd") @RequestParam(required = false) String endDate
     ) {
-
-        return Result.success(null);
+        Page<ExamRecord> pageBean = new Page<>(page, size);
+        Page<ExamRecord> examRecordPage = examRecordService.getExamRecords(pageBean,studentName,studentNumber,status,startDate,endDate);
+        log.info("分页查询考试记录={}", examRecordPage);
+        return Result.success(examRecordPage,"分页查询考试记录成功");
     }
 
     /**
@@ -52,8 +63,8 @@ public class ExamRecordController {
     @Operation(summary = "获取考试记录详情", description = "根据记录ID获取考试记录的详细信息，包括试卷内容和答题情况")  // API描述
     public Result<ExamRecord> getExamRecordById(
             @Parameter(description = "考试记录ID") @PathVariable Integer id) {
-
-        return Result.success(null);
+        ExamRecord examRecord = examService.getExamRecordById(id);
+        return Result.success(examRecord);
     }
 
     /**
@@ -64,7 +75,9 @@ public class ExamRecordController {
     public Result<Void> deleteExamRecord(
             @Parameter(description = "考试记录ID") @PathVariable Integer id) {
 
-         return Result.error("删除失败");
+        examRecordService.customRemoveById(id);
+        log.info("删除考试记录成功！id:{}",id);
+        return Result.success("删除考试记录成功！id:{}");
     }
 
     /**
@@ -82,7 +95,8 @@ public class ExamRecordController {
             @Parameter(description = "显示数量限制，可选，不传则返回所有记录") @RequestParam(required = false) Integer limit
     ) {
         // 使用优化的查询方法，避免N+1查询问题
-
-        return Result.success(null);
+        List<ExamRankingVO> examRankingVOS =  examRecordService.customGetRanking(paperId,limit);
+        log.info("查询：{}试卷下的{}条数据成功！数据为：{}",paperId,limit,examRankingVOS);
+        return Result.success(examRankingVOS);
     }
 } 
