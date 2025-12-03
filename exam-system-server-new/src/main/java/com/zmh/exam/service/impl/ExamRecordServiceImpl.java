@@ -3,19 +3,17 @@ package com.zmh.exam.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zmh.exam.entity.AnswerRecord;
 import com.zmh.exam.entity.ExamRecord;
 import com.zmh.exam.entity.Paper;
 import com.zmh.exam.mapper.AnswerRecordMapper;
 import com.zmh.exam.mapper.ExamRecordMapper;
 import com.zmh.exam.service.ExamRecordService;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zmh.exam.service.PaperService;
 import com.zmh.exam.vo.ExamRankingVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.Strings;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -95,7 +93,7 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
             throw new RuntimeException("当前考试id为:"+id+"记录查询不到");
         }
         if (examRecord.getStatus().equals("进行中")){
-            throw new RuntimeException("目前考试还在进行中,不能删除");
+            throw new RuntimeException("目前考试id为:"+id+"还在进行中,不能删除");
         }
 
         //删除自身数据，同时删除答题记录
@@ -107,8 +105,8 @@ public class ExamRecordServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRec
 
     @Override
     public List<ExamRankingVO> customGetRanking(Integer paperId, Integer limit) {
-        //根据试卷id查询相关属性,并根据考试分数倒序排序,取前limit条数据,查询结果封装或赋值给ExamRankingVO
-
-        return List.of();
+        // 根据试卷id查询相关属性,并根据考试分数倒序排序,取前limit条数据,查询结果封装或赋值给ExamRankingVO
+        List<ExamRankingVO> rankingList = examRecordMapper.selectRanking(paperId, limit);
+        return rankingList == null ? List.of() : rankingList;
     }
 }

@@ -106,7 +106,7 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
 
         //根据examRecordId查出对应的完整的考试记录数据
         ExamRecord examRecord = gradeExam(examRecordId);
-        //此时的examRecord内有除了考试状态之外所有所需的数据
+        //此时的examRecord内有了所有所需的数据
         List<AnswerRecord> answerRecords = examRecord.getAnswerRecords();
         try {
             answerRecordMapper.updateById(answerRecords);//判卷完之后在批量更新对应的答案记录
@@ -114,8 +114,6 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
             throw new RuntimeException("答案记录更新失败:"+answerRecordList);
         }
 
-        //更新考试状态为完成
-        examRecord.setStatus("已批阅");
         //更新考试的结束时间
         examRecord.setEndTime(LocalDateTime.now());
         //更新对应的考试记录
@@ -219,6 +217,8 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
         examRecord.setAnswers(summary);
         examRecord.setScore(totalScore);//设置本场考试总得分
         examRecord.setAnswerRecords(answerRecordList);
+        //更新考试状态为完成
+        examRecord.setStatus("已批阅");
         return examRecord;
     }
 
