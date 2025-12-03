@@ -41,6 +41,11 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
     private final ExamRecordMapper examRecordMapper;
 
 
+    /**
+     * 获取试卷详情(深度查询试卷所有信息)
+     * @param id
+     * @return
+     */
     @Override
     public Paper customPaperDetailById(Integer id) {
 //        单表java代码进行paper查询

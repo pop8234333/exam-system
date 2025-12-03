@@ -5,12 +5,9 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.zmh.exam.common.Result;
 import com.zmh.exam.config.properties.KimiProperties;
+import com.zmh.exam.entity.Question;
 import com.zmh.exam.service.KimiAiService;
-import com.zmh.exam.vo.AiGenerateRequestVo;
-import com.zmh.exam.vo.ChatMessage;
-import com.zmh.exam.vo.ChatRequest;
-import com.zmh.exam.vo.ChatResponse;
-import com.zmh.exam.vo.QuestionImportVo;
+import com.zmh.exam.vo.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +16,9 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -105,6 +104,80 @@ public class KimiAiServiceImpl implements KimiAiService {
     }
 
     /**
+     * 构建判卷提示词
+     */
+    private String buildGradingPrompt(Question question, String userAnswer, Integer maxScore) {
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("你是一名专业的考试阅卷老师，请对以下题目进行判卷：\n\n");
+
+        prompt.append("【题目信息】\n");
+        prompt.append("题型：").append(getQuestionTypeText(question.getType())).append("\n");
+        prompt.append("题目：").append(question.getTitle()).append("\n");
+        prompt.append("标准答案：").append(question.getAnswer().getAnswer()).append("\n");
+        prompt.append("满分：").append(maxScore).append("分\n\n");
+
+        prompt.append("【学生答案】\n");
+        prompt.append(userAnswer.trim().isEmpty() ? "（未作答）" : userAnswer).append("\n\n");
+
+        prompt.append("【判卷要求】\n");
+        if ("CHOICE".equals(question.getType()) || "JUDGE".equals(question.getType())) {
+            prompt.append("- 客观题：答案完全正确得满分，答案错误得0分\n");
+        } else if ("TEXT".equals(question.getType())) {
+            prompt.append("- 主观题：根据答案的准确性、完整性、逻辑性进行评分\n");
+            prompt.append("- 答案要点正确且完整：80-100%分数\n");
+            prompt.append("- 答案基本正确但不够完整：60-80%分数\n");
+            prompt.append("- 答案部分正确：30-60%分数\n");
+            prompt.append("- 答案完全错误或未作答：0分\n");
+        }
+
+        prompt.append("\n请按以下JSON格式返回判卷结果：\n");
+        prompt.append("{\n");
+        prompt.append("  \"score\": 实际得分(整数),\n");
+        prompt.append("  \"feedback\": \"具体的评价反馈(50字以内)\",\n");
+        prompt.append("  \"reason\": \"扣分原因或得分依据(30字以内)\"\n");
+        prompt.append("}");
+
+        return prompt.toString();
+    }
+
+    /**
+     * 构建考试总评提示词
+     */
+    private String buildSummaryPrompt(Integer totalScore, Integer maxScore, Integer questionCount, Integer correctCount) {
+        double percentage = (double) totalScore / maxScore * 100;
+
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("你是一名资深的教育专家，请为学生的考试表现提供专业的总评和学习建议：\n\n");
+
+        prompt.append("【考试成绩】\n");
+        prompt.append("总得分：").append(totalScore).append("/").append(maxScore).append("分\n");
+        prompt.append("得分率：").append(String.format("%.1f", percentage)).append("%\n");
+        prompt.append("题目总数：").append(questionCount).append("道\n");
+        prompt.append("完全答对题数：").append(correctCount).append("道\n\n");
+
+        prompt.append("【要求】\n");
+        prompt.append("请提供一份150字左右的考试总评，包括：\n");
+        prompt.append("1. 对本次考试表现的客观评价\n");
+        prompt.append("2. 指出优势和不足之处\n");
+        prompt.append("3. 提供具体的学习建议和改进方向\n");
+        prompt.append("4. 给予鼓励和激励\n\n");
+
+        prompt.append("请直接返回总评内容，无需特殊格式：");
+
+        return prompt.toString();
+    }
+
+    /**
+     * 获取题目类型文本
+     */
+    private String getQuestionTypeText(String type) {
+        Map<String, String> typeMap = new HashMap<>();
+        typeMap.put("CHOICE", "选择题");
+        typeMap.put("JUDGE", "判断题");
+        typeMap.put("TEXT", "简答题");
+        return typeMap.getOrDefault(type, "未知题型");
+    }
+    /**
      * AI生成题目
      */
     @Override
@@ -161,6 +234,88 @@ public class KimiAiServiceImpl implements KimiAiService {
             log.error("AI生成题目失败", e);
             return Result.error("AI生成题目失败：" + e.getMessage());
         }
+    }
+
+    @Override
+    public GradingResult gradingTextQuestion(Question question, String userAnswer, Integer maxScore) {
+        //1.构建ai提示词
+        String prompt = buildGradingPrompt(question, userAnswer, maxScore);
+        // 2) 拼装Kimi聊天请求体
+        ChatRequest chatRequest = ChatRequest.builder()
+                .model(kimiProperties.getModel())
+                .messages(List.of(
+                        new ChatMessage("system", "你是一名专业的考试阅卷老师，请严格按要求返回JSON，不要附带解释。"),
+                        new ChatMessage("user", prompt)
+                ))
+                .temperature(kimiProperties.getTemperature() == null ? 0.3 : kimiProperties.getTemperature())
+                .maxTokens(kimiProperties.getMaxTokens())
+                .stream(false)
+                .build();
+        System.out.println("chatRequest = " + chatRequest);
+        // 3) 调用Kimi接口并阻塞等待（带超时）
+        ChatResponse response = webClient.post()
+                .bodyValue(chatRequest)
+                .retrieve()
+                .bodyToMono(ChatResponse.class)
+                .block(AI_TIMEOUT);
+
+        // 4) 判空：没有choices视为无效响应
+        if (response == null || response.getChoices() == null || response.getChoices().isEmpty()) {
+            log.warn("AI响应为空或不包含有效内容");
+            throw new RuntimeException("AI未返回响应，请稍后再试");
+        }
+        // 5) 取首条回复内容并解析为GradingResult
+        String aiContent = response.getChoices().get(0).getMessage().getContent();
+        // 去掉```包裹，并尝试解析JSON
+        String cleaned = stripCodeFence(aiContent);
+        GradingResult gradingResult = JSON.parseObject(cleaned, GradingResult.class);
+        if (gradingResult == null) {
+            throw new RuntimeException("AI返回内容无法解析，请调整提示后重试");
+        }
+
+
+        return gradingResult;
+    }
+    /**
+     * 生成考试总评和建议
+     * @param totalScore 总得分
+     * @param maxScore 总满分
+     * @param questionCount 题目总数
+     * @param correctCount 答对题目数
+     * @return 考试总评
+     */
+    @Override
+    public String buildSummary(Integer totalScore, Integer maxScore, Integer questionCount, Integer correctCount) {
+        //1.构建ai提示词
+        String prompt = buildSummaryPrompt(totalScore, maxScore, questionCount,correctCount);
+        // 2) 拼装Kimi聊天请求体
+        ChatRequest chatRequest = ChatRequest.builder()
+                .model(kimiProperties.getModel())
+                .messages(List.of(
+                        new ChatMessage("system", "你是一名资深的教育专家，请为学生的考试表现提供专业的总评和学习建议"),
+                        new ChatMessage("user", prompt)
+                ))
+                .temperature(kimiProperties.getTemperature() == null ? 0.3 : kimiProperties.getTemperature())
+                .maxTokens(kimiProperties.getMaxTokens())
+                .stream(false)
+                .build();
+        System.out.println("chatRequest = " + chatRequest);
+        // 3) 调用Kimi接口并阻塞等待（带超时）
+        ChatResponse response = webClient.post()
+                .bodyValue(chatRequest)
+                .retrieve()
+                .bodyToMono(ChatResponse.class)
+                .block(AI_TIMEOUT);
+
+        // 4) 判空：没有choices视为无效响应
+        if (response == null || response.getChoices() == null || response.getChoices().isEmpty()) {
+            log.warn("AI响应为空或不包含有效内容");
+            throw new RuntimeException("AI未返回响应，请稍后再试");
+        }
+
+        // 5) 取首条回复内容并返回
+
+        return response.getChoices().get(0).getMessage().getContent();
     }
 
 
